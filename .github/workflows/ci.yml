@@ -56,7 +56,8 @@ jobs:
           $ErrorActionPreference = 'Stop'
           $env:CGO_ENABLED = '0'
           Set-Location app/relaystore
-          go build -tags 'desktop,production' -ldflags '-w -s -H windowsgui' -o relaystore.exe .
+          $version = if ($env:GITHUB_REF_NAME -like 'v*') { $env:GITHUB_REF_NAME } else { 'dev' }
+          go build -tags 'desktop,production' -ldflags "-w -s -H windowsgui -X main.a1Version=$version" -o relaystore.exe .
           if (-not (Test-Path relaystore.exe)) { throw 'build produced no exe' }
           Get-Item relaystore.exe | Select-Object Name, Length
 

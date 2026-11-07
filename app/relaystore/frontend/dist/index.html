@@ -36,6 +36,7 @@
 <header>
   <h1>云驿</h1>
   <span class="tag" id="data">keys: - · depots: -</span>
+  <span class="tag" id="version">v-</span>
 </header>
 <main>
   <section class="card">
@@ -55,6 +56,29 @@
     </div>
     <div class="bar" style="margin-top:10px"><i id="fill"></i></div>
     <table id="depots" style="margin-top:12px"></table>
+  </section>
+  <section class="card">
+    <div class="row" style="justify-content:space-between">
+      <strong>设置</strong>
+      <span id="modeTag" class="tag">-</span>
+    </div>
+    <div class="row" style="margin-top:12px">
+      <label style="flex:1">数据目录 <input id="dataDir" class="wide" style="width:calc(100% - 90px)" /></label>
+      <button class="ghost" id="pickData">浏览</button>
+      <button class="ghost" id="openData">打开</button>
+    </div>
+    <div class="row" style="margin-top:10px">
+      <label style="flex:1">游戏目录 <input id="gameDir" class="wide" style="width:calc(100% - 90px)" /></label>
+      <button class="ghost" id="pickGame">浏览</button>
+      <button class="ghost" id="openGame">打开</button>
+    </div>
+    <div class="row" style="margin-top:10px">
+      <label>并行 depot <input id="cfgDepot" style="width:70px" /></label>
+      <label>并行 chunk <input id="cfgChunk" style="width:70px" /></label>
+      <button id="saveSettings">保存设置</button>
+      <span id="saveHint" class="muted"></span>
+    </div>
+    <div class="muted" style="margin-top:10px;font-size:12px" id="settingsPath"></div>
   </section>
   <section class="card">
     <strong>日志</strong>

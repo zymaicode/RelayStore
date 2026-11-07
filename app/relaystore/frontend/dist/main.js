@@ -11,9 +11,20 @@ function setData(keys, depots) {
   $("data").textContent = "keys: " + keys + " · depots: " + depots;
 }
 
+async function loadSettings() {
+  const settings = await app().GetSettings();
+  $("dataDir").value = settings.dataDir;
+  $("gameDir").value = settings.gameDir;
+  $("cfgDepot").value = settings.depotWorkers;
+  $("cfgChunk").value = settings.chunkWorkers;
+}
+
 async function refreshData() {
   const data = await app().DataSync();
   setData(data.keys, data.depots);
+  $("version").textContent = data.version;
+  $("modeTag").textContent = data.portable ? "便携版" : "安装版";
+  $("settingsPath").textContent = "配置文件：" + data.settings;
   if (data.needsData) {
     $("overlay").classList.add("show");
     $("dataStatus").textContent = "数据目录：" + data.dataDir;
@@ -47,6 +58,8 @@ async function boot() {
     } else if (info.stage === "save") {
       $("dataFill").style.width = "95%";
       $("dataStatus").textContent = "正在写入本地…";
+    } else if (info.stage === "prepare") {
+      $("dataStatus").textContent = "准备写入 " + info.target;
     }
   });
   window.runtime.EventsOn("data:error", (msg) => {
@@ -61,8 +74,12 @@ async function boot() {
     await refreshData();
   });
 
+  await loadSettings();
   const data = await refreshData();
-  log("[boot] keys=" + data.keys + " depots=" + data.depots + " dir=" + data.dataDir);
+  log("[boot] v" + data.version + " keys=" + data.keys + " depots=" + data.depots);
+  if (!data.needsData) {
+    $("target").value = await app().GamePath(Number($("appid").value));
+  }
 }
 
 function render(report) {
@@ -106,18 +123,50 @@ async function start() {
   }
 }
 
+async function saveSettings2() {
+  const next = {
+    dataDir: $("dataDir").value,
+    gameDir: $("gameDir").value,
+    depotWorkers: Number($("cfgDepot").value) || 2,
+    chunkWorkers: Number($("cfgChunk").value) || 8,
+    checkUpdates: true,
+  };
+  $("saveHint").textContent = "保存中…";
+  try {
+    const msg = await app().SaveSettings(next);
+    $("saveHint").textContent = msg;
+    log("[settings] " + msg);
+    await refreshData();
+  } catch (err) {
+    $("saveHint").textContent = "失败：" + err;
+    log("[settings] 失败: " + err);
+  }
+}
+
 $("check").addEventListener("click", check);
 $("start").addEventListener("click", start);
+$("saveSettings").addEventListener("click", saveSettings2);
 $("later").addEventListener("click", () => $("overlay").classList.remove("show"));
 $("downloadData").addEventListener("click", async () => {
   $("downloadData").disabled = true;
   $("dataStatus").textContent = "准备下载…";
-  try {
-    await app().BootstrapData();
-  } catch (err) {
+  try { await app().BootstrapData(); } catch (err) {
     $("dataStatus").textContent = "失败：" + err;
     $("downloadData").disabled = false;
   }
+});
+$("pickData").addEventListener("click", async () => {
+  const dir = await app().PickFolder("选择数据目录", $("dataDir").value);
+  if (dir) $("dataDir").value = dir;
+});
+$("pickGame").addEventListener("click", async () => {
+  const dir = await app().PickFolder("选择游戏目录", $("gameDir").value);
+  if (dir) $("gameDir").value = dir;
+});
+$("openData").addEventListener("click", () => app().OpenFolder($("dataDir").value));
+$("openGame").addEventListener("click", () => app().OpenFolder($("gameDir").value));
+$("appid").addEventListener("change", async () => {
+  $("target").value = await app().GamePath(Number($("appid").value));
 });
 
 boot();
