@@ -1,0 +1,51 @@
+name: release
+
+# One release per version tag, and exactly one asset: a source snapshot zip.
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Build source archive
+        run: |
+          set -euo pipefail
+          REF="${GITHUB_REF_NAME}"
+          NAME="steamstore-${REF}.zip"
+          git archive --format=zip --prefix="steamstore-${REF}/" -o "$NAME" HEAD
+          echo "ASSET=$NAME" >> "$GITHUB_ENV"
+          ls -l "$NAME"
+
+      - name: Publish release with a single asset
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          REF="${GITHUB_REF_NAME}"
+          if gh release view "$REF" > /dev/null 2>&1; then
+            gh release delete "$REF" --yes --cleanup-tag=false
+          fi
+          gh release create "$REF" "$ASSET" \
+            --title "$REF" \
+            --notes "source snapshot $REF"
+
+      - name: Verify exactly one asset
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          COUNT=$(gh release view "$GITHUB_REF_NAME" --json assets --jq '.assets | length')
+          echo "assets=$COUNT"
+          test "$COUNT" = "1"

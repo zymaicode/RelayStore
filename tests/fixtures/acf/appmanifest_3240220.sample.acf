@@ -1,0 +1,71 @@
+"AppState"
+{
+	"appid"		"3240220"
+	"Universe"		"1"
+	"LauncherPath"		"C:\\Steam\\steam.exe"
+	"name"		"Grand Theft Auto V Enhanced"
+	"StateFlags"		"6"
+	"installdir"		"Grand Theft Auto V Enhanced"
+	"LastUpdated"		"1793453648"
+	"LastPlayed"		"1791220680"
+	"SizeOnDisk"		"103265449064"
+	"StagingSize"		"0"
+	"buildid"		"25971420"
+	"LastOwner"		"0"
+	"DownloadType"		"4"
+	"UpdateResult"		"0"
+	"BytesToDownload"		"55377169"
+	"BytesDownloaded"		"0"
+	"BytesToStage"		"0"
+	"BytesStaged"		"0"
+	"TargetBuildID"		"25971420"
+	"AutoUpdateBehavior"		"0"
+	"AllowOtherDownloadsWhileRunning"		"0"
+	"ScheduledAutoUpdate"		"1793914184"
+	"InstalledDepots"
+	{
+		"3240221"
+		{
+			"manifest"		"7738940149188702855"
+			"size"		"600"
+		}
+		"3240222"
+		{
+			"manifest"		"8737726049140786475"
+			"size"		"34299685325"
+		}
+		"3240223"
+		{
+			"manifest"		"619408595394031782"
+			"size"		"9154916352"
+		}
+		"3240224"
+		{
+			"manifest"		"7913232881396830533"
+			"size"		"55641487360"
+		}
+		"3240225"
+		{
+			"manifest"		"862898123192382483"
+			"size"		"3883897875"
+		}
+		"1899671"
+		{
+			"manifest"		"4453235760517360390"
+			"size"		"285461552"
+		}
+	}
+	"InstallScripts"
+	{
+		"3240221"		"installscript.vdf"
+		"1899671"		"installscript_sdk.vdf"
+	}
+	"UserConfig"
+	{
+		"language"		"schinese"
+	}
+	"MountedConfig"
+	{
+		"language"		"schinese"
+	}
+}

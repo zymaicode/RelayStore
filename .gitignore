@@ -1,0 +1,34 @@
+# --- data, secrets, third-party snapshots (never commit) ---
+src/data/
+backup/private/
+backup/vcs/
+opensource/
+*.env
+.env
+
+# --- binaries and toolchains ---
+tools/bin/
+**/*.exe
+**/*.dll
+**/*.pdb
+app/steamclient/build/
+app/steamclient/frontend/wailsjs/
+app/steamclient/frontend/node_modules/
+node_modules/
+
+# --- generated / caches ---
+__pycache__/
+*.pyc
+*.pyo
+tests/reports/
+.vs/
+.idea/
+*.log
+
+# --- go build outputs ---
+tools/steamcore/steamcore.exe
+tools/steamcore/*.test
+
+# --- os junk ---
+Thumbs.db
+desktop.ini

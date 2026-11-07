@@ -1,0 +1,109 @@
+{
+  "runtimeTarget": {
+    "name": ".NETCoreApp,Version=v10.0",
+    "signature": ""
+  },
+  "compilationOptions": {},
+  "targets": {
+    ".NETCoreApp,Version=v10.0": {
+      "steamauth/1.0.0": {
+        "dependencies": {
+          "SteamKit2": "4.0.0-Beta.2"
+        },
+        "runtime": {
+          "steamauth.dll": {}
+        }
+      },
+      "protobuf-net/3.4.40": {
+        "dependencies": {
+          "protobuf-net.Core": "3.4.40"
+        },
+        "runtime": {
+          "lib/net8.0/protobuf-net.dll": {
+            "assemblyVersion": "3.0.0.0",
+            "fileVersion": "3.4.40.15014"
+          }
+        }
+      },
+      "protobuf-net.Core/3.4.40": {
+        "runtime": {
+          "lib/net8.0/protobuf-net.Core.dll": {
+            "assemblyVersion": "3.0.0.0",
+            "fileVersion": "3.4.40.15014"
+          }
+        }
+      },
+      "SteamKit2/4.0.0-Beta.2": {
+        "dependencies": {
+          "System.IO.Hashing": "10.0.13",
+          "ZstdSharp.Port": "0.8.8",
+          "protobuf-net": "3.4.40"
+        },
+        "runtime": {
+          "lib/net10.0/SteamKit2.dll": {
+            "assemblyVersion": "4.0.0.0",
+            "fileVersion": "4.0.0.0"
+          }
+        }
+      },
+      "System.IO.Hashing/10.0.13": {
+        "runtime": {
+          "lib/net10.0/System.IO.Hashing.dll": {
+            "assemblyVersion": "10.0.0.13",
+            "fileVersion": "10.0.1326.50504"
+          }
+        }
+      },
+      "ZstdSharp.Port/0.8.8": {
+        "runtime": {
+          "lib/net9.0/ZstdSharp.dll": {
+            "assemblyVersion": "0.8.8.0",
+            "fileVersion": "0.8.8.0"
+          }
+        }
+      }
+    }
+  },
+  "libraries": {
+    "steamauth/1.0.0": {
+      "type": "project",
+      "serviceable": false,
+      "sha512": ""
+    },
+    "protobuf-net/3.4.40": {
+      "type": "package",
+      "serviceable": true,
+      "sha512": "sha512-Gds96uOs0bZlDfLIYHRMee1xmrWxUTLM9HSOlDzUmyzkTGDcMWw3Lgx9TPUxD94r+/E/Y9OEL5Cf3PiTHn9bfw==",
+      "path": "protobuf-net/3.4.40",
+      "hashPath": "protobuf-net.3.4.40.nupkg.sha512"
+    },
+    "protobuf-net.Core/3.4.40": {
+      "type": "package",
+      "serviceable": true,
+      "sha512": "sha512-UDQ8fbEKqpQktJfFyqkZ22S7P01sJWNmqkYjzbwZdZUHFwHIDigmWIzxmExF7NjbNoTqmv2Dfsu3rOpRHXK5EA==",
+      "path": "protobuf-net.core/3.4.40",
+      "hashPath": "protobuf-net.core.3.4.40.nupkg.sha512"
+    },
+    "SteamKit2/4.0.0-Beta.2": {
+      "type": "package",
+      "serviceable": true,
+      "sha512": "sha512-2hfK7nBMEKEyqR49d8pu5dzGuc4noWAdri/ro9niMqfBqd9ZAB1WOUOGqVi8x5HqAW48s2RKvH+/i5YmKeah8w==",
+      "path": "steamkit2/4.0.0-beta.2",
+      "hashPath": "steamkit2.4.0.0-beta.2.nupkg.sha512"
+    },
+    "System.IO.Hashing/10.0.13": {
+      "type": "package",
+      "serviceable": true,
+      "sha512": "sha512-ZlcywyQ7FJmgOV2nctdfOEPGS0kRK8T2CdOoPr6F4HPYpmjSo6GQfj3yTyOzNO6B+2U84/JKSPkJJMWqLmVsMw==",
+      "path": "system.io.hashing/10.0.13",
+      "hashPath": "system.io.hashing.10.0.13.nupkg.sha512"
+    },
+    "ZstdSharp.Port/0.8.8": {
+      "type": "package",
+      "serviceable": true,
+      "sha512": "sha512-UIDFkA5DC3en3tOJ3Mof11yBx9kUQLsaeo/oFdvN6Bbkr9E9+VCqfIadHci8cu+I51K2Sl7XYWVl2R/mA75NBQ==",
+      "path": "zstdsharp.port/0.8.8",
+      "hashPath": "zstdsharp.port.0.8.8.nupkg.sha512"
+    }
+  }
+}

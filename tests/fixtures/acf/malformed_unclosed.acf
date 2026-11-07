@@ -1,0 +1,12 @@
+"AppState"
+{
+	"appid"		"550"
+	"name"		"Left 4 Dead 2"
+	"InstalledDepots"
+	{
+		"551"
+		{
+			"manifest"		"314878501352141828"
+			"size"		"11329675570"
+		}
+	}

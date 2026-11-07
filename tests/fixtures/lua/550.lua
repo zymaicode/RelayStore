@@ -1,0 +1,7 @@
+-- SteamTools / LMU style manifest config
+addappid(550)
+addappid(551, 1, "314878501352141828")
+setManifestid(551, "314878501352141828", 11329675570)
+addappid(552, 1, "8555994540167139077")
+setManifestid(552, "8555994540167139077", 3634678710)
+addtoken(550, "691935366181")

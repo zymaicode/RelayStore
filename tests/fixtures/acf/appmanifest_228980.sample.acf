@@ -1,0 +1,34 @@
+"AppState"
+{
+	"appid"		"228980"
+	"Universe"		"1"
+	"LauncherPath"		"C:\\Steam\\steam.exe"
+	"name"		"Steamworks Common Redistributables"
+	"StateFlags"		"4"
+	"installdir"		"Steamworks Shared"
+	"LastUpdated"		"1783831449"
+	"LastPlayed"		"0"
+	"SizeOnDisk"		"0"
+	"StagingSize"		"0"
+	"buildid"		"24098430"
+	"LastOwner"		"0"
+	"DownloadType"		"1"
+	"UpdateResult"		"0"
+	"BytesToDownload"		"0"
+	"BytesDownloaded"		"0"
+	"BytesToStage"		"0"
+	"BytesStaged"		"0"
+	"TargetBuildID"		"24098430"
+	"AutoUpdateBehavior"		"0"
+	"AllowOtherDownloadsWhileRunning"		"0"
+	"ScheduledAutoUpdate"		"0"
+	"InstalledDepots"
+	{
+	}
+	"UserConfig"
+	{
+	}
+	"MountedConfig"
+	{
+	}
+}

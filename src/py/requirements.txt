@@ -1,0 +1,5 @@
+# Core toolkit is standard-library only (Python 3.12).
+# Test runner is optional: tools/scripts/run-tests.ps1 falls back to
+# unittest discovery when pytest is unavailable (this machine currently has
+# an MSYS python without pip, so unittest is the default path).
+pytest>=8.0

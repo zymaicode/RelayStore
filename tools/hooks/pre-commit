@@ -1,0 +1,24 @@
+#!/bin/sh
+# Pre-commit gate for backup/vcs (local version repo).
+# Blocks any commit that contains sensitive content.
+REPO_ROOT=$(git rev-parse --show-toplevel 2>/dev/null || pwd)
+SCRIPT_DIR=$(cd "$(dirname "$0")" && pwd)
+SCAN="$SCRIPT_DIR/../scripts/desensitize-scan.ps1"
+if [ ! -f "$SCAN" ]; then
+  echo "[pre-commit] scanner not found, refusing to commit" >&2
+  exit 1
+fi
+if command -v pwsh >/dev/null 2>&1; then
+  pwsh -NoProfile -ExecutionPolicy Bypass -File "$SCAN" -Root "$REPO_ROOT" -Path "." || {
+    echo "[pre-commit] blocked: sensitive content detected" >&2
+    exit 1
+  }
+elif command -v powershell >/dev/null 2>&1; then
+  powershell -NoProfile -ExecutionPolicy Bypass -File "$SCAN" -Root "$REPO_ROOT" -Path "." || {
+    echo "[pre-commit] blocked: sensitive content detected" >&2
+    exit 1
+  }
+else
+  echo "[pre-commit] powershell not found, refusing to commit" >&2
+  exit 1
+fi

@@ -1,0 +1,46 @@
+"AppState"
+{
+	"appid"		"550"
+	"Universe"		"1"
+	"LauncherPath"		"C:\\Steam\\steam.exe"
+	"name"		"Left 4 Dead 2"
+	"StateFlags"		"4"
+	"installdir"		"Left 4 Dead 2"
+	"LastUpdated"		"1791087598"
+	"LastPlayed"		"1793453295"
+	"SizeOnDisk"		"14964354280"
+	"StagingSize"		"0"
+	"buildid"		"23990068"
+	"LastOwner"		"0"
+	"DownloadType"		"1"
+	"UpdateResult"		"0"
+	"BytesToDownload"		"8537457840"
+	"BytesDownloaded"		"8537457840"
+	"BytesToStage"		"14964354280"
+	"BytesStaged"		"14964354280"
+	"TargetBuildID"		"23990068"
+	"AutoUpdateBehavior"		"0"
+	"AllowOtherDownloadsWhileRunning"		"0"
+	"ScheduledAutoUpdate"		"0"
+	"InstalledDepots"
+	{
+		"551"
+		{
+			"manifest"		"314878501352141828"
+			"size"		"11329675570"
+		}
+		"552"
+		{
+			"manifest"		"8555994540167139077"
+			"size"		"3634678710"
+		}
+	}
+	"UserConfig"
+	{
+		"language"		"english"
+	}
+	"MountedConfig"
+	{
+		"language"		"english"
+	}
+}
