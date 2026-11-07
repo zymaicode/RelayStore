@@ -1,21 +1,51 @@
-name: release
+name: ci
 
-# One release per version tag, and exactly one asset: a source snapshot zip.
 on:
   push:
-    tags:
-      - 'v*'
+    branches: [main]
+    tags: ['v*']
   workflow_dispatch:
 
 permissions:
   contents: write
 
 jobs:
-  publish:
+  verify:
+    name: verify
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: 'stable'
+
+      - name: Build Go core
+        run: |
+          set -euo pipefail
+          cd tools/steamcore
+          go vet ./...
+          go build ./...
+          go build -o /tmp/steamcore ./
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Compile-check Python sources
+        run: |
+          set -euo pipefail
+          python -m compileall -q src/py tests
+
+  publish:
+    name: publish
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: verify
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
@@ -37,9 +67,7 @@ jobs:
           if gh release view "$REF" > /dev/null 2>&1; then
             gh release delete "$REF" --yes --cleanup-tag=false
           fi
-          gh release create "$REF" "$ASSET" \
-            --title "$REF" \
-            --notes "source snapshot $REF"
+          gh release create "$REF" "$ASSET" --title "$REF" --notes "source snapshot $REF"
 
       - name: Verify exactly one asset
         env:

@@ -43,3 +43,4 @@ tools/steamcore/*.test
 # --- os junk ---
 Thumbs.db
 desktop.ini
+backup/
