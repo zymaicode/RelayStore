@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Steam 客户端</title>
+<style>
+  :root { color-scheme: dark; }
+  body { margin:0; font: 14px/1.5 "Segoe UI", system-ui, sans-serif; background:#0f1115; color:#e6e9ef; }
+  header { padding:16px 20px; border-bottom:1px solid #222835; display:flex; align-items:center; gap:12px; }
+  h1 { font-size:16px; margin:0; font-weight:600; }
+  .tag { font-size:12px; padding:2px 8px; border-radius:999px; background:#1b2230; color:#8fb3ff; }
+  main { padding:20px; display:grid; gap:16px; }
+  .card { background:#141922; border:1px solid #222835; border-radius:10px; padding:16px; }
+  .row { display:flex; gap:10px; flex-wrap:wrap; align-items:center; }
+  input { background:#0b0f16; border:1px solid #2a3242; color:#e6e9ef; padding:8px 10px; border-radius:8px; width:110px; }
+  input.wide { width:340px; }
+  button { background:#2b6cff; border:0; color:#fff; padding:8px 14px; border-radius:8px; cursor:pointer; }
+  button:disabled { opacity:.45; cursor:not-allowed; }
+  .bar { height:10px; background:#0b0f16; border-radius:999px; overflow:hidden; border:1px solid #222835; }
+  .bar > i { display:block; height:100%; width:0%; background:linear-gradient(90deg,#2b6cff,#5ee0a0); transition:width .3s; }
+  pre { margin:0; max-height:240px; overflow:auto; background:#0b0f16; border:1px solid #222835; border-radius:8px; padding:10px; font-size:12px; }
+  table { width:100%; border-collapse:collapse; font-size:12px; }
+  th,td { text-align:left; padding:6px 8px; border-bottom:1px solid #1d2431; }
+  .ok { color:#5ee0a0; } .bad { color:#ff7a7a; } .muted { color:#8b97ac; }
+</style>
+</head>
+<body>
+<header>
+  <h1>Steam 客户端</h1>
+  <span class="tag" id="data">keys: - · depots: -</span>
+</header>
+<main>
+  <section class="card">
+    <div class="row">
+      <label>AppID <input id="appid" value="480" /></label>
+      <label>安装目录 <input id="target" class="wide" value="D:/Games/480" /></label>
+      <label>并行 depot <input id="depotWorkers" value="2" /></label>
+      <button id="check">检查可用性</button>
+      <button id="start" disabled>开始下载</button>
+    </div>
+    <div id="verdict" class="muted" style="margin-top:12px">等待检查…</div>
+  </section>
+  <section class="card">
+    <div class="row" style="justify-content:space-between">
+      <strong>进度</strong>
+      <span id="stats" class="muted">idle</span>
+    </div>
+    <div class="bar" style="margin-top:10px"><i id="fill"></i></div>
+    <table id="depots" style="margin-top:12px"></table>
+  </section>
+  <section class="card">
+    <strong>日志</strong>
+    <pre id="log"></pre>
+  </section>
+</main>
+<script src="./main.js"></script>
+</body>
+</html>
