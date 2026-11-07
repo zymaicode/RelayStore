@@ -25,6 +25,10 @@ tests/reports/
 .idea/
 *.log
 
+# --- .NET build outputs ---
+tools/steamauth/obj/
+tools/steamauth/bin/
+
 # --- go build outputs ---
 tools/steamcore/steamcore.exe
 tools/steamcore/*.test
