@@ -50,22 +50,33 @@ jobs:
         with:
           go-version: 'stable'
 
-      - name: Build steamclient.exe
+      - name: Install NSIS
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          choco install nsis --no-progress -y
+          $nsis = 'C:\Program Files (x86)\NSIS'
+          if (-not (Test-Path $nsis)) { throw 'NSIS install failed' }
+          $nsis | Out-File -Append -FilePath $env:GITHUB_PATH -Encoding utf8
+
+      - name: Build app and installer
         shell: pwsh
         run: |
           $ErrorActionPreference = 'Stop'
           $env:CGO_ENABLED = '0'
-          Set-Location app/relaystore
           $version = if ($env:GITHUB_REF_NAME -like 'v*') { $env:GITHUB_REF_NAME } else { 'dev' }
-          go build -tags 'desktop,production' -ldflags "-w -s -H windowsgui -X main.a1Version=$version" -o relaystore.exe .
-          if (-not (Test-Path relaystore.exe)) { throw 'build produced no exe' }
-          Get-Item relaystore.exe | Select-Object Name, Length
+          go install github.com/wailsapp/wails/v2/cmd/wails@latest
+          Set-Location app/relaystore
+          wails build -nsis -clean -ldflags "-X main.a1Version=$version"
+          Get-ChildItem build/bin | Select-Object Name, Length
 
-      - name: Upload exe
+      - name: Upload artifacts
         uses: actions/upload-artifact@v4
         with:
           name: relaystore-windows
-          path: app/relaystore/relaystore.exe
+          path: |
+            app/relaystore/build/bin/relaystore.exe
+            app/relaystore/build/bin/*installer.exe
           if-no-files-found: error
 
   publish:
@@ -78,7 +89,7 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Download exe artifact
+      - name: Download artifacts
         uses: actions/download-artifact@v4
         with:
           name: relaystore-windows
@@ -90,9 +101,27 @@ jobs:
           REF="${GITHUB_REF_NAME}"
           NAME="relaystore-${REF}.zip"
           git archive --format=zip --prefix="relaystore-${REF}/" -o "$NAME" HEAD
-          ls -l "$NAME" dist
+          ls -l dist "$NAME"
 
-      - name: Publish release (source zip + windows exe)
+      - name: Build latest.json
+        run: |
+          set -euo pipefail
+          REF="${GITHUB_REF_NAME}"
+          EXE_SHA=$(sha256sum dist/relaystore.exe | cut -d' ' -f1)
+          SETUP=$(ls dist/*installer*.exe | head -n1)
+          SETUP_NAME=$(basename "$SETUP")
+          SETUP_SHA=$(sha256sum "$SETUP" | cut -d' ' -f1)
+          cat > dist/latest.json <<EOF
+          {
+            "version": "${REF}",
+            "portable": { "name": "relaystore.exe", "sha256": "${EXE_SHA}" },
+            "installer": { "name": "${SETUP_NAME}", "sha256": "${SETUP_SHA}" },
+            "source": "relaystore-${REF}.zip"
+          }
+          EOF
+          cat dist/latest.json
+
+      - name: Publish release
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
@@ -101,17 +130,15 @@ jobs:
           if gh release view "$REF" > /dev/null 2>&1; then
             gh release delete "$REF" --yes --cleanup-tag=false
           fi
-          gh release create "$REF" "relaystore-${REF}.zip" dist/relaystore.exe \
+          gh release create "$REF" "relaystore-${REF}.zip" dist/relaystore.exe dist/*installer*.exe dist/latest.json \
             --title "$REF" \
-            --notes "relaystore source snapshot + windows build for $REF"
+            --notes "relaystore ${REF}"
 
-      - name: Verify assets
+      - name: Verify assets and metadata
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           set -euo pipefail
           gh release view "$GITHUB_REF_NAME" --json assets --jq '.assets[] | .name + " " + (.size|tostring)'
-          ZIPS=$(gh release view "$GITHUB_REF_NAME" --json assets --jq '[.assets[] | select(.name|endswith(".zip"))] | length')
-          EXES=$(gh release view "$GITHUB_REF_NAME" --json assets --jq '[.assets[] | select(.name|endswith(".exe"))] | length')
-          test "$ZIPS" = "1"
-          test "$EXES" = "1"
+          test "$(gh release view "$GITHUB_REF_NAME" --json assets --jq '[.assets[]|select(.name|endswith(".exe"))]|length')" -ge 2
+          test "$(gh release view "$GITHUB_REF_NAME" --json assets --jq '[.assets[]|select(.name=="latest.json")]|length')" = 1
