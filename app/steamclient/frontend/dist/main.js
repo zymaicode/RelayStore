@@ -7,14 +7,23 @@ function log(line) {
   el.scrollTop = el.scrollHeight;
 }
 
-async function boot() {
-  try {
-    const data = await app().DataSync();
-    $("data").textContent = "keys: " + data.keys + " · depots: " + data.depots;
-    log("[boot] keys=" + data.keys + " depots=" + data.depots);
-  } catch (err) {
-    log("[boot] 失败: " + err);
+function setData(keys, depots) {
+  $("data").textContent = "keys: " + keys + " · depots: " + depots;
+}
+
+async function refreshData() {
+  const data = await app().DataSync();
+  setData(data.keys, data.depots);
+  if (data.needsData) {
+    $("overlay").classList.add("show");
+    $("dataStatus").textContent = "数据目录：" + data.dataDir;
+  } else {
+    $("overlay").classList.remove("show");
   }
+  return data;
+}
+
+async function boot() {
   window.runtime.EventsOn("restore:start", (appid) => log("[job] appid=" + appid + " 开始"));
   window.runtime.EventsOn("restore:depot", (row) => {
     log("[depot " + row.depot_id + "] " + row.status + " files=" + row.files_ok + " bytes=" + row.bytes);
@@ -27,6 +36,33 @@ async function boot() {
     $("fill").style.width = "100%";
     $("start").disabled = false;
   });
+  window.runtime.EventsOn("data:progress", (info) => {
+    if (info.stage === "download") {
+      $("dataFill").style.width = info.percent + "%";
+      $("dataStatus").textContent = "正在下载第 " + info.index + "/" + info.total + " 个数据源…";
+      log("[data] 下载 " + info.source);
+    } else if (info.stage === "warn") {
+      $("dataStatus").textContent = "一个数据源失败，继续尝试下一个…";
+      log("[data] 警告: " + info.message);
+    } else if (info.stage === "save") {
+      $("dataFill").style.width = "95%";
+      $("dataStatus").textContent = "正在写入本地…";
+    }
+  });
+  window.runtime.EventsOn("data:error", (msg) => {
+    $("dataStatus").textContent = "失败：" + msg;
+    $("downloadData").disabled = false;
+    log("[data] 失败: " + msg);
+  });
+  window.runtime.EventsOn("data:done", async (info) => {
+    $("dataFill").style.width = "100%";
+    $("dataStatus").textContent = "完成：载入 " + info.keys + " 条密钥";
+    log("[data] 完成 keys=" + info.keys + " -> " + info.path);
+    await refreshData();
+  });
+
+  const data = await refreshData();
+  log("[boot] keys=" + data.keys + " depots=" + data.depots + " dir=" + data.dataDir);
 }
 
 function render(report) {
@@ -72,4 +108,16 @@ async function start() {
 
 $("check").addEventListener("click", check);
 $("start").addEventListener("click", start);
+$("later").addEventListener("click", () => $("overlay").classList.remove("show"));
+$("downloadData").addEventListener("click", async () => {
+  $("downloadData").disabled = true;
+  $("dataStatus").textContent = "准备下载…";
+  try {
+    await app().BootstrapData();
+  } catch (err) {
+    $("dataStatus").textContent = "失败：" + err;
+    $("downloadData").disabled = false;
+  }
+});
+
 boot();

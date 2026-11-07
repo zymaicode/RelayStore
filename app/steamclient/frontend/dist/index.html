@@ -16,13 +16,20 @@
   input { background:#0b0f16; border:1px solid #2a3242; color:#e6e9ef; padding:8px 10px; border-radius:8px; width:110px; }
   input.wide { width:340px; }
   button { background:#2b6cff; border:0; color:#fff; padding:8px 14px; border-radius:8px; cursor:pointer; }
+  button.ghost { background:#1b2230; color:#c9d3e3; }
   button:disabled { opacity:.45; cursor:not-allowed; }
   .bar { height:10px; background:#0b0f16; border-radius:999px; overflow:hidden; border:1px solid #222835; }
   .bar > i { display:block; height:100%; width:0%; background:linear-gradient(90deg,#2b6cff,#5ee0a0); transition:width .3s; }
-  pre { margin:0; max-height:240px; overflow:auto; background:#0b0f16; border:1px solid #222835; border-radius:8px; padding:10px; font-size:12px; }
+  pre { margin:0; max-height:220px; overflow:auto; background:#0b0f16; border:1px solid #222835; border-radius:8px; padding:10px; font-size:12px; }
   table { width:100%; border-collapse:collapse; font-size:12px; }
   th,td { text-align:left; padding:6px 8px; border-bottom:1px solid #1d2431; }
   .ok { color:#5ee0a0; } .bad { color:#ff7a7a; } .muted { color:#8b97ac; }
+  #overlay { position:fixed; inset:0; background:rgba(5,7,11,.72); display:none; align-items:center; justify-content:center; }
+  #overlay.show { display:flex; }
+  .modal { width:520px; background:#141922; border:1px solid #2a3242; border-radius:12px; padding:22px; }
+  .modal h2 { margin:0 0 8px; font-size:16px; }
+  .modal p { margin:0 0 12px; color:#a9b4c6; font-size:13px; }
+  .modal .actions { display:flex; gap:10px; justify-content:flex-end; margin-top:16px; }
 </style>
 </head>
 <body>
@@ -54,6 +61,20 @@
     <pre id="log"></pre>
   </section>
 </main>
+
+<div id="overlay">
+  <div class="modal">
+    <h2>缺少运行数据</h2>
+    <p id="modalText">首次启动需要下载密钥语料（约 30 MB，来自社区镜像）。不下载的话无法判断游戏能否下载。</p>
+    <div class="bar" style="margin-top:6px"><i id="dataFill"></i></div>
+    <p id="dataStatus" class="muted" style="margin-top:8px">等待确认…</p>
+    <div class="actions">
+      <button class="ghost" id="later">稍后</button>
+      <button id="downloadData">下载数据</button>
+    </div>
+  </div>
+</div>
+
 <script src="./main.js"></script>
 </body>
 </html>
