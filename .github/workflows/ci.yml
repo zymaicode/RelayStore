@@ -27,7 +27,6 @@ jobs:
           cd tools/steamcore
           go vet ./...
           go build ./...
-          go build -o /tmp/steamcore ./
 
       - name: Set up Python
         uses: actions/setup-python@v5
@@ -39,15 +38,50 @@ jobs:
           set -euo pipefail
           python -m compileall -q src/py tests
 
+  build-windows:
+    name: build-windows
+    needs: verify
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: 'stable'
+
+      - name: Build steamclient.exe
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $env:CGO_ENABLED = '0'
+          Set-Location app/steamclient
+          go build -tags 'desktop,production' -ldflags '-w -s -H windowsgui' -o steamclient.exe .
+          if (-not (Test-Path steamclient.exe)) { throw 'build produced no exe' }
+          Get-Item steamclient.exe | Select-Object Name, Length
+
+      - name: Upload exe
+        uses: actions/upload-artifact@v4
+        with:
+          name: steamclient-windows
+          path: app/steamclient/steamclient.exe
+          if-no-files-found: error
+
   publish:
     name: publish
     if: startsWith(github.ref, 'refs/tags/v')
-    needs: verify
+    needs: build-windows
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
+
+      - name: Download exe artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: steamclient-windows
+          path: dist
 
       - name: Build source archive
         run: |
@@ -55,10 +89,9 @@ jobs:
           REF="${GITHUB_REF_NAME}"
           NAME="steamstore-${REF}.zip"
           git archive --format=zip --prefix="steamstore-${REF}/" -o "$NAME" HEAD
-          echo "ASSET=$NAME" >> "$GITHUB_ENV"
-          ls -l "$NAME"
+          ls -l "$NAME" dist
 
-      - name: Publish release with a single asset
+      - name: Publish release (source zip + windows exe)
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
@@ -67,13 +100,17 @@ jobs:
           if gh release view "$REF" > /dev/null 2>&1; then
             gh release delete "$REF" --yes --cleanup-tag=false
           fi
-          gh release create "$REF" "$ASSET" --title "$REF" --notes "source snapshot $REF"
+          gh release create "$REF" "steamstore-${REF}.zip" dist/steamclient.exe \
+            --title "$REF" \
+            --notes "source snapshot + windows build for $REF"
 
-      - name: Verify exactly one asset
+      - name: Verify assets
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           set -euo pipefail
-          COUNT=$(gh release view "$GITHUB_REF_NAME" --json assets --jq '.assets | length')
-          echo "assets=$COUNT"
-          test "$COUNT" = "1"
+          gh release view "$GITHUB_REF_NAME" --json assets --jq '.assets[] | .name + " " + (.size|tostring)'
+          ZIPS=$(gh release view "$GITHUB_REF_NAME" --json assets --jq '[.assets[] | select(.name|endswith(".zip"))] | length')
+          EXES=$(gh release view "$GITHUB_REF_NAME" --json assets --jq '[.assets[] | select(.name|endswith(".exe"))] | length')
+          test "$ZIPS" = "1"
+          test "$EXES" = "1"
