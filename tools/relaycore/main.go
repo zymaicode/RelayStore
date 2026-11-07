@@ -9,7 +9,7 @@ import (
 	"os"
 	"time"
 
-	"steamcore/core"
+	"relaycore/core"
 )
 
 func cmdDecode(args []string) {

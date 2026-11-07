@@ -1,10 +1,10 @@
-module steamclient
+module relaystore
 
 go 1.27.3
 
 require (
 	github.com/wailsapp/wails/v2 v2.17.1
-	steamcore v0.0.0
+	relaycore v0.0.0
 )
 
 require (
@@ -42,4 +42,4 @@ require (
 
 // replace github.com/wailsapp/wails/v2 v2.17.1 => D:\GoPath\pkg\mod
 
-replace steamcore => ../../tools/steamcore
+replace relaycore => ../../tools/relaycore

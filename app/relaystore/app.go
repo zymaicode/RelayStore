@@ -13,7 +13,7 @@ import (
 
 	"github.com/wailsapp/wails/v2/pkg/runtime"
 
-	"steamcore/core"
+	"relaycore/core"
 )
 
 // Upstream key corpora (community mirrors, same sources the Python CLI uses).
@@ -39,7 +39,7 @@ func (a *App) startup(ctx context.Context) {
 // dataDir is the per-user data folder used once the app runs outside the repo.
 func dataDir() string {
 	if base, err := os.UserConfigDir(); err == nil {
-		dir := filepath.Join(base, "steamstore")
+		dir := filepath.Join(base, "relaystore")
 		_ = os.MkdirAll(dir, 0o755)
 		return dir
 	}
@@ -123,7 +123,7 @@ func fetchJSON(url string) (map[string]string, error) {
 	if err != nil {
 		return nil, err
 	}
-	request.Header.Set("User-Agent", "steamstore/1.0")
+	request.Header.Set("User-Agent", "relaystore/1.0")
 	response, err := client.Do(request)
 	if err != nil {
 		return nil, err

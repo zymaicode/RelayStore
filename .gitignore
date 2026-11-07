@@ -18,9 +18,9 @@ tools/bin/
 **/*.exe
 **/*.dll
 **/*.pdb
-app/steamclient/build/
-app/steamclient/frontend/wailsjs/
-app/steamclient/frontend/node_modules/
+app/relaystore/build/
+app/relaystore/frontend/wailsjs/
+app/relaystore/frontend/node_modules/
 node_modules/
 
 # --- generated / caches ---
@@ -37,8 +37,8 @@ tools/steamauth/obj/
 tools/steamauth/bin/
 
 # --- go build outputs ---
-tools/steamcore/steamcore.exe
-tools/steamcore/*.test
+tools/relaycore/steamcore.exe
+tools/relaycore/*.test
 
 # --- os junk ---
 Thumbs.db

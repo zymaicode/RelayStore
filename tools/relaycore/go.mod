@@ -1,4 +1,4 @@
-module steamcore
+module relaycore
 
 go 1.27.3
 

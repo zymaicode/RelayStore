@@ -1,7 +1,7 @@
 {
   "$schema": "https://wails.io/schemas/config.v2.json",
-  "name": "steamclient",
-  "outputfilename": "steamclient",
+  "name": "relaystore",
+  "outputfilename": "relaystore",
   "frontend:install": "",
   "frontend:build": "",
   "frontend:dev:watcher": "",

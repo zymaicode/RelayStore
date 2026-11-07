@@ -24,7 +24,7 @@ jobs:
       - name: Build Go core
         run: |
           set -euo pipefail
-          cd tools/steamcore
+          cd tools/relaycore
           go vet ./...
           go build ./...
 
@@ -55,16 +55,16 @@ jobs:
         run: |
           $ErrorActionPreference = 'Stop'
           $env:CGO_ENABLED = '0'
-          Set-Location app/steamclient
-          go build -tags 'desktop,production' -ldflags '-w -s -H windowsgui' -o steamclient.exe .
-          if (-not (Test-Path steamclient.exe)) { throw 'build produced no exe' }
-          Get-Item steamclient.exe | Select-Object Name, Length
+          Set-Location app/relaystore
+          go build -tags 'desktop,production' -ldflags '-w -s -H windowsgui' -o relaystore.exe .
+          if (-not (Test-Path relaystore.exe)) { throw 'build produced no exe' }
+          Get-Item relaystore.exe | Select-Object Name, Length
 
       - name: Upload exe
         uses: actions/upload-artifact@v4
         with:
-          name: steamclient-windows
-          path: app/steamclient/steamclient.exe
+          name: relaystore-windows
+          path: app/relaystore/relaystore.exe
           if-no-files-found: error
 
   publish:
@@ -80,15 +80,15 @@ jobs:
       - name: Download exe artifact
         uses: actions/download-artifact@v4
         with:
-          name: steamclient-windows
+          name: relaystore-windows
           path: dist
 
       - name: Build source archive
         run: |
           set -euo pipefail
           REF="${GITHUB_REF_NAME}"
-          NAME="steamstore-${REF}.zip"
-          git archive --format=zip --prefix="steamstore-${REF}/" -o "$NAME" HEAD
+          NAME="relaystore-${REF}.zip"
+          git archive --format=zip --prefix="relaystore-${REF}/" -o "$NAME" HEAD
           ls -l "$NAME" dist
 
       - name: Publish release (source zip + windows exe)
@@ -100,9 +100,9 @@ jobs:
           if gh release view "$REF" > /dev/null 2>&1; then
             gh release delete "$REF" --yes --cleanup-tag=false
           fi
-          gh release create "$REF" "steamstore-${REF}.zip" dist/steamclient.exe \
+          gh release create "$REF" "relaystore-${REF}.zip" dist/relaystore.exe \
             --title "$REF" \
-            --notes "source snapshot + windows build for $REF"
+            --notes "relaystore source snapshot + windows build for $REF"
 
       - name: Verify assets
         env:
