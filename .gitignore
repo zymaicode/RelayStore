@@ -44,3 +44,4 @@ tools/relaycore/*.test
 Thumbs.db
 desktop.ini
 backup/
+tools/steamauth/
