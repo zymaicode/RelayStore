@@ -1,3 +1,10 @@
+# --- internal research notes (kept in the local backup/vcs only) ---
+docs/
+memory/
+CLAUDE.md
+AGENT.md
+tests/reports/
+
 # --- data, secrets, third-party snapshots (never commit) ---
 src/data/
 backup/private/
