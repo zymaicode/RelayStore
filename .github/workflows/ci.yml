@@ -134,6 +134,25 @@ jobs:
             --title "$REF" \
             --notes "relaystore ${REF}"
 
+      - name: Publish metadata to main (raw endpoint)
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          mkdir -p updates
+          cp dist/latest.json updates/latest.json
+          git config user.name "relaystore-ci"
+          git config user.email "ci@relaystore.local"
+          git fetch origin main
+          git checkout main
+          git add updates/latest.json
+          if git diff --cached --quiet; then
+            echo "metadata unchanged"
+          else
+            git commit -m "chore: update latest.json [skip ci]"
+            git push origin main
+          fi
+
       - name: Verify assets and metadata
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}

@@ -59,6 +59,18 @@
   </section>
   <section class="card">
     <div class="row" style="justify-content:space-between">
+      <strong>更新</strong>
+      <button class="ghost" id="checkUpdate">检查更新</button>
+    </div>
+    <div id="updateInfo" class="muted" style="margin-top:10px">当前版本 -</div>
+    <div class="bar" id="updateBarWrap" style="margin-top:10px;display:none"><i id="updateFill"></i></div>
+    <div class="row" style="margin-top:10px">
+      <button id="doUpdate" style="display:none">立即更新</button>
+      <span id="updateHint" class="muted"></span>
+    </div>
+  </section>
+  <section class="card">
+    <div class="row" style="justify-content:space-between">
       <strong>设置</strong>
       <span id="modeTag" class="tag">-</span>
     </div>

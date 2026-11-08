@@ -80,6 +80,8 @@ async function boot() {
   if (!data.needsData) {
     $("target").value = await app().GamePath(Number($("appid").value));
   }
+  $("updateInfo").textContent = "当前版本 " + data.version;
+  if (data.version && data.version !== "dev") { setTimeout(checkUpdate, 3000); }
 }
 
 function render(report) {
@@ -168,5 +170,65 @@ $("openGame").addEventListener("click", () => app().OpenFolder($("gameDir").valu
 $("appid").addEventListener("change", async () => {
   $("target").value = await app().GamePath(Number($("appid").value));
 });
+
+let updateStatus = null;
+
+function renderUpdate(status) {
+  updateStatus = status;
+  $("updateBarWrap").style.display = "none";
+  if (status.error) {
+    $("updateInfo").textContent = "当前 " + status.current + " · 检查失败：" + status.error;
+    $("doUpdate").style.display = "none";
+    return;
+  }
+  if (status.hasUpdate) {
+    $("updateInfo").innerHTML = "当前 " + status.current + " → <span class=\"ok\">" + status.latest + "</span> 可用";
+    $("doUpdate").style.display = "inline-block";
+    $("doUpdate").textContent = status.portable ? "前往下载" : "立即更新";
+    log("[update] 发现新版本 " + status.latest);
+  } else {
+    $("updateInfo").textContent = "当前 " + status.current + " · 已是最新";
+    $("doUpdate").style.display = "none";
+  }
+}
+
+async function checkUpdate() {
+  $("updateInfo").textContent = "检查中…";
+  try {
+    renderUpdate(await app().CheckUpdate());
+  } catch (err) {
+    $("updateInfo").textContent = "检查失败：" + err;
+  }
+}
+
+async function doUpdate() {
+  if (!updateStatus) return;
+  if (updateStatus.portable) {
+    await app().OpenReleasePage(updateStatus.releaseUrl);
+    $("updateHint").textContent = "已打开下载页，下载新 exe 覆盖即可";
+    return;
+  }
+  $("doUpdate").disabled = true;
+  $("updateBarWrap").style.display = "block";
+  try {
+    const path = await app().DownloadInstaller(updateStatus.installerUrl, updateStatus.installerName, updateStatus.installerSha256);
+    $("updateHint").textContent = "校验通过，正在启动安装程序…";
+    await app().RunInstaller(path);
+  } catch (err) {
+    $("updateHint").textContent = "更新失败：" + err;
+    $("doUpdate").disabled = false;
+  }
+}
+
+$("checkUpdate").addEventListener("click", checkUpdate);
+$("doUpdate").addEventListener("click", doUpdate);
+window.runtime.EventsOn("update:progress", (info) => {
+  $("updateBarWrap").style.display = "block";
+  $("updateFill").style.width = (info.percent || 0) + "%";
+  if (info.stage === "download") $("updateHint").textContent = "下载中 " + (info.percent || 0).toFixed(0) + "%";
+  if (info.stage === "verify") $("updateHint").textContent = "校验 sha256…";
+  if (info.stage === "verified") $("updateHint").textContent = "校验通过";
+});
+window.runtime.EventsOn("update:error", (msg) => { $("updateHint").textContent = "更新失败：" + msg; });
 
 boot();
