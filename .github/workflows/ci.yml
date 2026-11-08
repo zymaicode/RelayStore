@@ -139,12 +139,12 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           set -euo pipefail
-          mkdir -p updates
-          cp dist/latest.json updates/latest.json
           git config user.name "relaystore-ci"
           git config user.email "ci@relaystore.local"
           git fetch origin main
           git checkout main
+          mkdir -p updates
+          cp dist/latest.json updates/latest.json
           git add updates/latest.json
           if git diff --cached --quiet; then
             echo "metadata unchanged"
