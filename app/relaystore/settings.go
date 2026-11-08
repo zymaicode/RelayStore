@@ -23,10 +23,23 @@ type Settings struct {
 	ChunkWorkers int    `json:"chunkWorkers"`
 	CheckUpdates bool   `json:"checkUpdates"`
 	Theme        string `json:"theme"`
+	FontSize     string `json:"fontSize"`
 }
 
 // ThemeNames lists the bundled themes (ported from CodeForge).
 var ThemeNames = []string{"light", "dark", "animal", "wenyang"}
+
+// FontSizeNames lists the UI density presets.
+var FontSizeNames = []string{"compact", "standard", "relaxed"}
+
+func normalizeFontSize(name string) string {
+	for _, candidate := range FontSizeNames {
+		if candidate == name {
+			return name
+		}
+	}
+	return "standard"
+}
 
 func normalizeTheme(name string) string {
 	for _, candidate := range ThemeNames {
@@ -71,6 +84,7 @@ func defaultSettings() Settings {
 			ChunkWorkers: 8,
 			CheckUpdates: true,
 			Theme:        "light",
+			FontSize:     "standard",
 		}
 	}
 	return Settings{
@@ -80,6 +94,7 @@ func defaultSettings() Settings {
 		ChunkWorkers: 8,
 		CheckUpdates: true,
 		Theme:        "light",
+		FontSize:     "standard",
 	}
 }
 
@@ -103,6 +118,7 @@ func loadSettings() Settings {
 		settings.ChunkWorkers = 8
 	}
 	settings.Theme = normalizeTheme(settings.Theme)
+	settings.FontSize = normalizeFontSize(settings.FontSize)
 	return settings
 }
 

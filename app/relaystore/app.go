@@ -124,6 +124,7 @@ func (a *App) DataSync() map[string]any {
 	keys := len(a.keys)
 	return map[string]any{
 		"theme":     a.settings.Theme,
+		"fontSize":  a.settings.FontSize,
 		"keys":      keys,
 		"depots":    depots,
 		"needsData": keys == 0,
@@ -142,6 +143,14 @@ func (a *App) SetTheme(name string) string {
 	a.settings.Theme = theme
 	_ = saveSettings(a.settings)
 	return theme
+}
+
+// SetFontSize switches the UI density preset and persists it.
+func (a *App) SetFontSize(name string) string {
+	size := normalizeFontSize(name)
+	a.settings.FontSize = size
+	_ = saveSettings(a.settings)
+	return size
 }
 
 // GetSettings returns the current configuration for the settings panel.

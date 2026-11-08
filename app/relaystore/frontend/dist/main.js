@@ -28,11 +28,36 @@ function log(line) {
 
 /* ---------- theme (four CodeForge themes) ---------- */
 const THEMES = [
-  { id: "light", name: "浅色", sw: ["#fcfbf7", "#facc15", "#111111"] },
-  { id: "dark", name: "深色", sw: ["#0f1115", "#facc15", "#65718b"] },
-  { id: "animal", name: "森友会", sw: ["#f8f8f0", "#19c8b9", "#a17e44"] },
-  { id: "wenyang", name: "纹样", sw: ["#f6eedb", "#b91c1c", "#977f51"] },
+  { id: "light", name: "浅色", thumb: "./thumbs/theme-light.png" },
+  { id: "dark", name: "深色", thumb: "./thumbs/theme-dark.png" },
+  { id: "animal", name: "森友会", thumb: "./thumbs/theme-animal.png" },
+  { id: "wenyang", name: "纹样", thumb: "./thumbs/theme-wenyang.png" },
 ];
+
+const SIZES = [
+  { id: "compact", name: "紧凑" },
+  { id: "standard", name: "标准" },
+  { id: "relaxed", name: "宽松" },
+];
+
+function applySize(name) {
+  document.body.dataset.size = name || "standard";
+  document.querySelectorAll(".size-opt").forEach((el) => el.classList.toggle("active", el.dataset.size === name));
+}
+
+function renderSizePicker(current) {
+  const box = $("sizePicker");
+  if (!box) return;
+  box.innerHTML = SIZES.map((s) =>
+    '<button class="size-opt' + (s.id === current ? " active" : "") + '" data-size="' + s.id + '">' + s.name + "</button>"
+  ).join("");
+  box.querySelectorAll(".size-opt").forEach((el) => el.addEventListener("click", async () => {
+    const id = el.dataset.size;
+    applySize(id);
+    try { await app().SetFontSize(id); renderSizePicker(id); toast("字号：" + (SIZES.find((s) => s.id === id) || {}).name, "ok"); }
+    catch (err) { toast("字号保存失败：" + err, "bad"); }
+  }));
+}
 
 function applyTheme(name) {
   document.documentElement.dataset.theme = name || "light";
@@ -45,8 +70,8 @@ function renderThemePicker(current) {
   const box = $("themePicker");
   if (!box) return;
   box.innerHTML = THEMES.map((t) =>
-    '<div class="theme-opt' + (t.id === current ? " active" : "") + '" data-theme="' + t.id + '">' +
-    '<div class="swatches">' + t.sw.map((c) => '<span class="sw" style="background:' + c + '"></span>').join("") + "</div>" +
+    '<div class="theme-opt' + (t.id === current ? " active" : "") + '" data-theme="' + t.id + '" title="' + t.name + '">' +
+    '<img src="' + t.thumb + '" alt="' + t.name + '" />' +
     "<span>" + t.name + "</span></div>"
   ).join("");
   box.querySelectorAll(".theme-opt").forEach((el) => el.addEventListener("click", async () => {
@@ -430,6 +455,8 @@ $("storeStart").addEventListener("click", storeStartDownload);
   const data = await refreshData();
   applyTheme(data.theme || "light");
   renderThemePicker(data.theme || "light");
+  applySize(data.fontSize || "standard");
+  renderSizePicker(data.fontSize || "standard");
   await loadGames();
   await initSources();
   await loadStore("");

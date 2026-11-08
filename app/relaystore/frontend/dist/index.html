@@ -224,6 +224,29 @@
   .modal p { margin:0 0 12px; color: var(--muted); font-size:12.5px; }
   .modal .actions { display:flex; gap:10px; justify-content:flex-end; margin-top:16px; }
 
+  /* ---------- size presets ---------- */
+  body[data-size="compact"] { zoom: .94; }
+  body[data-size="relaxed"] { zoom: 1.10; }
+  .sizes { display:flex; gap:8px; }
+  .size-opt { padding:5px 12px; font-size:12px; background: var(--canvas); color: var(--fg); box-shadow: none; }
+  .size-opt.active { background: var(--accent); color: var(--accent-fg); box-shadow: var(--sh-1); }
+
+  /* ---------- theme thumbnails ---------- */
+  .themes { align-items:stretch; }
+  .theme-opt { padding:8px; gap:6px; min-width:132px; }
+  .theme-opt img { width:132px; height:76px; object-fit:cover; display:block;
+                   border: var(--bw) solid var(--card-bd); border-radius: var(--r-sm); }
+  .theme-opt.active img { outline: 3px solid var(--accent); outline-offset: 1px; }
+
+  /* ---------- seal (朱印) ---------- */
+  .seal { display:none; width:34px; height:34px; margin-top:10px; place-items:center;
+          background: #b91c1c; color: #fff8e6; border:2px solid #7f1414; border-radius: 3px;
+          font-family: var(--font-ui); font-size:16px; font-weight:700; letter-spacing:1px;
+          transform: rotate(-4deg); box-shadow: 0 2px 5px rgba(127,20,20,.35); }
+  .seal-lg { display:grid; width:auto; min-width:64px; height:64px; padding:0 10px; font-size:20px; letter-spacing:3px; }
+  html[data-theme="wenyang"] .seal { display:grid; }
+  html[data-theme="wenyang"] .seal-lg { display:grid; }
+
   /* ===== theme-specific component overrides (faithful to CodeForge) ===== */
   /* animal: pill buttons, clay shadows, rounded cards, warm-yellow sidebar */
   html[data-theme="animal"] button { border-radius: var(--r-pill); border-color: #bdaea0; background: #f8f8f0; color: #794f27; }
@@ -239,6 +262,18 @@
   html[data-theme="animal"] .game { border-radius: var(--r-md); }
   html[data-theme="animal"] .card { border-radius: var(--r-lg); }
   html[data-theme="animal"] .game .cover, html[data-theme="animal"] .logo { border-radius: 50%; }
+  /* 手绘描边质感：外侧黏土底影 + 内侧 1px 暖描边 */
+  html[data-theme="animal"] .card,
+  html[data-theme="animal"] .game,
+  html[data-theme="animal"] button,
+  html[data-theme="animal"] input,
+  html[data-theme="animal"] .search {
+    box-shadow: var(--sh-1), inset 0 0 0 1px rgba(189,174,160,.55);
+  }
+  html[data-theme="animal"] .card { box-shadow: var(--sh-2), inset 0 0 0 1px rgba(189,174,160,.45); }
+  html[data-theme="animal"] .theme-opt { border-style: dashed; }
+  html[data-theme="animal"] .size-opt { background: #f8f8f0; color: #794f27; }
+  html[data-theme="animal"] .size-opt.active { background: var(--accent); color: #fff; }
 
   /* wenyang: seal-red buttons, paper cards, thin gold accents, serif headings */
   html[data-theme="wenyang"] button { background: var(--accent); color: var(--accent-fg); border: 1.5px solid #9a1818;
@@ -251,6 +286,8 @@
   html[data-theme="wenyang"] .game { border-color: #c9a85c; }
   html[data-theme="wenyang"] .nav.active { border-color: #c9a85c; }
   html[data-theme="wenyang"] .logo { background: var(--accent); color: var(--accent-fg); }
+  html[data-theme="wenyang"] .size-opt { background: #fffbf0; color: #2b1d0e; border: 1.5px solid var(--card-bd); box-shadow: none; }
+  html[data-theme="wenyang"] .size-opt.active { background: var(--accent); color: var(--accent-fg); border-color: #9a1818; }
 
   /* dark: slightly deeper contrast for borders/cards */
   html[data-theme="dark"] .card { border-color: #8592a8; }
@@ -296,6 +333,7 @@
         <div>密钥 <b id="keyCount">-</b></div>
         <div>清单索引 <b id="depotCount">-</b></div>
         <div id="settingsPath" style="margin-top:6px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis"></div>
+        <div class="seal" title="云驿">驿</div>
       </div>
     </aside>
 
@@ -373,6 +411,10 @@
         <div class="card">
           <h3>外观</h3>
           <div class="themes" id="themePicker"></div>
+          <div class="row" style="margin-top:14px;align-items:center">
+            <span class="muted" style="font-size:11.5px;min-width:34px">字号</span>
+            <div class="sizes" id="sizePicker"></div>
+          </div>
           <p class="muted" style="margin:10px 0 0;font-size:11.5px">主题沿用 CodeForge 的四套设计：浅色（野兽黄）/ 深色 / 森友会 / 纹样（宣纸朱砂）。选择会写入设置文件。</p>
         </div>
         <div class="card">
@@ -418,6 +460,11 @@
             <div class="game"><div class="cover">钥</div><div class="meta"><div class="title" id="aboutKeys">-</div><div class="path">密钥条目</div></div></div>
             <div class="game"><div class="cover">索</div><div class="meta"><div class="title" id="aboutDepots">-</div><div class="path">清单索引</div></div></div>
           </div>
+        </div>
+        <div class="card" style="display:flex;align-items:center;gap:18px">
+          <div class="seal seal-lg">云驿</div>
+          <div><h3 style="margin:0 0 4px">云驿 · RelayStore</h3>
+          <p class="muted" style="margin:0;font-size:12px">分发包与更新走 GitHub Release；源码每个版本只保留一个压缩包。</p></div>
         </div>
         <div class="card"><h3>发布与更新</h3><p class="muted" style="margin:0">发布页面：github.com/zymaicode/RelayStore</p></div>
       </section>
