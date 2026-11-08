@@ -98,13 +98,90 @@ func parseAppInfo(raw string, appid int) ([]DepotInfo, error) {
 	return depotsFromAppInfo(app), nil
 }
 
+// ParseAppName extracts common.name from a steamcmd app_info_print dump.
+func ParseAppName(raw string, appid int) (string, error) {
+	block, err := extractAppBlock(raw, appid)
+	if err != nil {
+		return "", err
+	}
+	root, err := ParseVDF(block)
+	if err != nil {
+		return "", err
+	}
+	var app *Node
+	for _, child := range root.Children {
+		if child.Key == strconv.Itoa(appid) {
+			app = child
+			break
+		}
+	}
+	if app == nil && len(root.Children) == 1 {
+		app = root.Children[0]
+	}
+	if app == nil {
+		return "", fmt.Errorf("app block %d missing", appid)
+	}
+	if common := app.Child("common"); common != nil {
+		if name := common.Child("name"); name != nil {
+			return name.Value, nil
+		}
+	}
+	return "", fmt.Errorf("no common.name for appid %d", appid)
+}
+
+// AppName returns the display name, caching it next to the appinfo depot cache.
+func AppName(appid int, cacheDir string) (string, error) {
+	cacheFile := ""
+	if cacheDir != "" {
+		cacheFile = filepath.Join(cacheDir, strconv.Itoa(appid)+".name")
+		if data, err := os.ReadFile(cacheFile); err == nil && len(data) > 0 {
+			return strings.TrimSpace(string(data)), nil
+		}
+	}
+	cmd := exec.Command(steamcmdPath(), "+login", "anonymous", "+app_info_print", strconv.Itoa(appid), "+quit")
+	output, err := cmd.CombinedOutput()
+	if err != nil && len(output) == 0 {
+		return "", err
+	}
+	name, err := ParseAppName(string(output), appid)
+	if err != nil {
+		return "", err
+	}
+	if cacheFile != "" {
+		_ = os.MkdirAll(cacheDir, 0o755)
+		_ = os.WriteFile(cacheFile, []byte(name), 0o644)
+	}
+	return name, nil
+}
+
 func steamcmdPath() string {
 	if custom := os.Getenv("STEAMCMD"); custom != "" {
 		return custom
 	}
-	for _, candidate := range []string{"tools/bin/steamcmd.exe", "tools\\bin\\steamcmd.exe"} {
-		if _, err := os.Stat(candidate); err == nil {
-			return candidate
+	relative := filepath.Join("tools", "bin", "steamcmd.exe")
+	if _, err := os.Stat(relative); err == nil {
+		return relative
+	}
+	// walk up from the working directory and the executable so a portable copy works
+	var starts []string
+	if wd, err := os.Getwd(); err == nil {
+		starts = append(starts, wd)
+	}
+	if exe, err := os.Executable(); err == nil {
+		starts = append(starts, filepath.Dir(exe))
+	}
+	for _, start := range starts {
+		dir := start
+		for i := 0; i < 6; i++ {
+			candidate := filepath.Join(dir, relative)
+			if _, err := os.Stat(candidate); err == nil {
+				return candidate
+			}
+			parent := filepath.Dir(dir)
+			if parent == dir {
+				break
+			}
+			dir = parent
 		}
 	}
 	return "steamcmd"

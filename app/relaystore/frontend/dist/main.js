@@ -81,19 +81,25 @@ async function loadGames() {
     list.innerHTML = '<div class="empty">还没有安装游戏<br/><span style="font-size:11.5px">在下方输入 AppID 检查并下载后，会显示在这里</span></div>';
     return;
   }
+  let metas = {};
+  try { metas = await app().GameMetas(games.map((g) => g.appid)); } catch (e) { metas = {}; }
   list.innerHTML = games.map((g) => {
-    const when = g.updated ? new Date(g.updated).toLocaleString() : "";
+    const meta = metas[g.appid] || metas[String(g.appid)] || {};
+    const title = meta.name || ("AppID " + g.appid);
+    const initial = (meta.name || String(g.appid)).trim().slice(0, 1).toUpperCase();
+    const cover = meta.image
+      ? '<div class="cover" style="background-image:url(\'' + meta.image + '\');background-size:cover;background-position:center"></div>'
+      : '<div class="cover">' + initial + '</div>';
     return '<div class="game">' +
-      '<div class="cover">' + String(g.appid).slice(0, 3) + '</div>' +
-      '<div class="meta"><div class="title">AppID ' + g.appid + '</div>' +
-      '<div class="path" title="' + g.path + '">' + g.path + '</div></div>' +
+      cover +
+      '<div class="meta"><div class="title">' + title + '</div>' +
+      '<div class="path" title="' + g.path + '">AppID ' + g.appid + ' · ' + g.path + '</div></div>' +
       '<div class="size">' + fmtBytes(g.bytes) + ' · ' + g.files + ' 个文件</div>' +
       '<button class="ghost" data-open="' + g.path.replace(/"/g, "&quot;") + '">打开目录</button>' +
       '</div>';
   }).join("");
   list.querySelectorAll("[data-open]").forEach((btn) => btn.addEventListener("click", () => app().OpenPath(btn.dataset.open)));
 }
-
 async function loadSettings() {
   const s = await app().GetSettings();
   $("dataDir").value = s.dataDir;
