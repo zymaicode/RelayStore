@@ -123,6 +123,7 @@ func (a *App) DataSync() map[string]any {
 	}
 	keys := len(a.keys)
 	return map[string]any{
+		"theme":     a.settings.Theme,
 		"keys":      keys,
 		"depots":    depots,
 		"needsData": keys == 0,
@@ -133,6 +134,14 @@ func (a *App) DataSync() map[string]any {
 		"version":   a.version,
 		"corpora":   len(keyCorpora),
 	}
+}
+
+// SetTheme switches the UI theme and persists it.
+func (a *App) SetTheme(name string) string {
+	theme := normalizeTheme(name)
+	a.settings.Theme = theme
+	_ = saveSettings(a.settings)
+	return theme
 }
 
 // GetSettings returns the current configuration for the settings panel.

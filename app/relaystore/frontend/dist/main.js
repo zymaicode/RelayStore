@@ -26,17 +26,45 @@ function log(line) {
   el.scrollTop = el.scrollHeight;
 }
 
-/* ---------- theme ---------- */
+/* ---------- theme (four CodeForge themes) ---------- */
+const THEMES = [
+  { id: "light", name: "浅色", sw: ["#fcfbf7", "#facc15", "#111111"] },
+  { id: "dark", name: "深色", sw: ["#0f1115", "#facc15", "#65718b"] },
+  { id: "animal", name: "森友会", sw: ["#f8f8f0", "#19c8b9", "#a17e44"] },
+  { id: "wenyang", name: "纹样", sw: ["#f6eedb", "#b91c1c", "#977f51"] },
+];
+
 function applyTheme(name) {
-  document.documentElement.dataset.theme = name;
-  $("themeBtn").textContent = name === "dark" ? "☾" : "☀";
-  localStorage.setItem("relaystore.theme", name);
+  document.documentElement.dataset.theme = name || "light";
+  const btn = $("themeBtn");
+  if (btn) btn.textContent = name === "dark" ? "☀" : "☾";
+  document.querySelectorAll(".theme-opt").forEach((el) => el.classList.toggle("active", el.dataset.theme === name));
 }
 
-$("themeBtn").addEventListener("click", () => {
-  applyTheme(document.documentElement.dataset.theme === "dark" ? "light" : "dark");
+function renderThemePicker(current) {
+  const box = $("themePicker");
+  if (!box) return;
+  box.innerHTML = THEMES.map((t) =>
+    '<div class="theme-opt' + (t.id === current ? " active" : "") + '" data-theme="' + t.id + '">' +
+    '<div class="swatches">' + t.sw.map((c) => '<span class="sw" style="background:' + c + '"></span>').join("") + "</div>" +
+    "<span>" + t.name + "</span></div>"
+  ).join("");
+  box.querySelectorAll(".theme-opt").forEach((el) => el.addEventListener("click", async () => {
+    const id = el.dataset.theme;
+    applyTheme(id);
+    try { await app().SetTheme(id); renderThemePicker(id); toast("已切换主题：" + (THEMES.find((t) => t.id === id) || {}).name, "ok"); }
+    catch (err) { toast("主题保存失败：" + err, "bad"); }
+  }));
+}
+
+$("themeBtn").addEventListener("click", async () => {
+  const cur = document.documentElement.dataset.theme || "light";
+  const idx = THEMES.findIndex((t) => t.id === cur);
+  const next = THEMES[(idx + 1) % THEMES.length].id;
+  applyTheme(next);
+  renderThemePicker(next);
+  try { await app().SetTheme(next); } catch (e) {}
 });
-applyTheme(localStorage.getItem("relaystore.theme") || "dark");
 
 /* ---------- navigation ---------- */
 function showPage(name) {
@@ -400,6 +428,8 @@ $("storeStart").addEventListener("click", storeStartDownload);
   log("[boot] 云驿启动");
   await loadSettings();
   const data = await refreshData();
+  applyTheme(data.theme || "light");
+  renderThemePicker(data.theme || "light");
   await loadGames();
   await initSources();
   await loadStore("");

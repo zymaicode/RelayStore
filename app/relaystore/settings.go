@@ -22,6 +22,19 @@ type Settings struct {
 	DepotWorkers int    `json:"depotWorkers"`
 	ChunkWorkers int    `json:"chunkWorkers"`
 	CheckUpdates bool   `json:"checkUpdates"`
+	Theme        string `json:"theme"`
+}
+
+// ThemeNames lists the bundled themes (ported from CodeForge).
+var ThemeNames = []string{"light", "dark", "animal", "wenyang"}
+
+func normalizeTheme(name string) string {
+	for _, candidate := range ThemeNames {
+		if candidate == name {
+			return name
+		}
+	}
+	return "light"
 }
 
 func exeDir() string {
@@ -57,6 +70,7 @@ func defaultSettings() Settings {
 			DepotWorkers: 2,
 			ChunkWorkers: 8,
 			CheckUpdates: true,
+			Theme:        "light",
 		}
 	}
 	return Settings{
@@ -65,6 +79,7 @@ func defaultSettings() Settings {
 		DepotWorkers: 2,
 		ChunkWorkers: 8,
 		CheckUpdates: true,
+		Theme:        "light",
 	}
 }
 
@@ -87,6 +102,7 @@ func loadSettings() Settings {
 	if settings.ChunkWorkers <= 0 {
 		settings.ChunkWorkers = 8
 	}
+	settings.Theme = normalizeTheme(settings.Theme)
 	return settings
 }
 
