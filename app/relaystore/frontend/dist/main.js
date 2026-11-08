@@ -51,6 +51,40 @@ document.addEventListener("keydown", (e) => {
   if (map[e.key]) { e.preventDefault(); showPage(map[e.key]); }
 });
 
+/* ---------- store sources (second level) ---------- */
+let storeSources = [];
+let currentSource = "builtin";
+
+function renderSources() {
+  const box = $("storeSources");
+  box.innerHTML = storeSources.map((s) =>
+    '<div class="subitem' + (s.id === currentSource ? " active" : "") + (s.available ? "" : " disabled") + '" data-source="' + s.id + '" title="' + (s.note || "") + '">' +
+    '<span class="dot"></span><span>' + s.name + '</span></div>'
+  ).join("");
+  box.querySelectorAll("[data-source]").forEach((item) => item.addEventListener("click", async (e) => {
+    e.stopPropagation();
+    const src = storeSources.find((s) => s.id === item.dataset.source);
+    if (!src) return;
+    if (!src.available) { toast(src.name + " 暂不可用：" + (src.note || ""), "bad"); return; }
+    currentSource = src.id;
+    renderSources();
+    showPage("store");
+    await loadStore("");
+  }));
+}
+
+async function initSources() {
+  try { storeSources = await app().StoreSources(); } catch (e) { storeSources = [{ id: "builtin", name: "云驿榜单", available: true }]; }
+  renderSources();
+}
+
+function toggleStoreNav() {
+  const box = $("storeSources");
+  const open = box.classList.toggle("open");
+  $("storeChevron").classList.toggle("open", open);
+}
+
+$("navStore").addEventListener("click", () => { showPage("store"); toggleStoreNav(); });
 /* ---------- data ---------- */
 async function refreshData() {
   const data = await app().DataSync();
@@ -364,6 +398,7 @@ $("storeStart").addEventListener("click", storeStartDownload);
   await loadSettings();
   const data = await refreshData();
   await loadGames();
+  await initSources();
   await loadStore("");
   await syncTarget();
   await checkUpdate();

@@ -38,6 +38,24 @@ func loadCatalog() catalogFile {
 	return file
 }
 
+// StoreSource describes one game source shown under the store entry.
+type StoreSource struct {
+	ID        string `json:"id"`
+	Name      string `json:"name"`
+	Available bool   `json:"available"`
+	Note      string `json:"note"`
+}
+
+// StoreSources lists the sources; only the built-in one works offline today.
+func (a *App) StoreSources() []StoreSource {
+	file := loadCatalog()
+	return []StoreSource{
+		{ID: "builtin", Name: "云驿榜单", Available: true, Note: "内置 " + strconv.Itoa(len(file.Games)) + " 条热门"},
+		{ID: "steam", Name: "Steam 商店", Available: false, Note: "当前网络不可达，待接入"},
+		{ID: "steamspy", Name: "SteamSpy 热度", Available: false, Note: "接口超时，待接入"},
+	}
+}
+
 // StoreCatalog returns the built-in popularity list.
 func (a *App) StoreCatalog() map[string]any {
 	file := loadCatalog()
