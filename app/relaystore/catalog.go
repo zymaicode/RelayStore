@@ -46,13 +46,13 @@ type StoreSource struct {
 	Note      string `json:"note"`
 }
 
-// StoreSources lists the sources; only the built-in one works offline today.
+// StoreSources lists the game sources the store page can switch between.
 func (a *App) StoreSources() []StoreSource {
 	file := loadCatalog()
 	return []StoreSource{
-		{ID: "builtin", Name: "云驿榜单", Available: true, Note: "内置 " + strconv.Itoa(len(file.Games)) + " 条热门"},
-		{ID: "steam", Name: "Steam 商店", Available: false, Note: "当前网络不可达，待接入"},
-		{ID: "steamspy", Name: "SteamSpy 热度", Available: false, Note: "接口超时，待接入"},
+		{ID: "builtin", Name: "云驿榜单 · 内置", Available: true, Note: "内置 " + strconv.Itoa(len(file.Games)) + " 条，离线可用"},
+		{ID: "online", Name: "云驿榜单 · 在线", Available: true, Note: "从 GitHub 拉取，无需更新客户端"},
+		{ID: "appid", Name: "AppID 直查", Available: true, Note: "输入任意 AppID 解析名称"},
 	}
 }
 
