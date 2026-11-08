@@ -1,87 +1,103 @@
 <!doctype html>
-<html lang="zh-CN">
+<html lang="zh-CN" data-theme="dark">
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>云驿</title>
 <style>
   :root {
-    color-scheme: dark;
-    --bg: #0d1016;
-    --panel: #12161f;
-    --panel-2: #161b26;
-    --line: #232a38;
-    --ink: #e7ebf3;
-    --ink-2: #98a3b8;
-    --accent: #3b7bff;
-    --accent-2: #5ee0a0;
-    --danger: #ff7a7a;
+    --bg:#0d1016; --panel:#12161f; --panel-2:#161b26; --line:#232a38;
+    --ink:#e7ebf3; --ink-2:#98a3b8; --accent:#3b7bff; --accent-soft:#1b2740;
+    --ok:#5ee0a0; --danger:#ff7a7a; --shadow:0 10px 30px rgba(0,0,0,.35);
   }
-  * { box-sizing: border-box; }
-  html, body { height: 100%; }
-  body { margin:0; font: 13px/1.55 "Segoe UI", "Microsoft YaHei UI", system-ui, sans-serif; background:var(--bg); color:var(--ink); overflow:hidden; }
+  html[data-theme="light"] {
+    --bg:#f4f6fb; --panel:#ffffff; --panel-2:#f7f9fd; --line:#dfe5f0;
+    --ink:#1a2130; --ink-2:#5f6b80; --accent:#2f6bff; --accent-soft:#e8efff;
+    --ok:#12976a; --danger:#d34040; --shadow:0 10px 24px rgba(20,30,60,.10);
+  }
+  * { box-sizing:border-box; }
+  html,body { height:100%; }
+  body { margin:0; font:13px/1.55 "Segoe UI","Microsoft YaHei UI",system-ui,sans-serif; background:var(--bg); color:var(--ink); overflow:hidden; transition:background .18s,color .18s; }
+  ::-webkit-scrollbar { width:10px; height:10px; }
+  ::-webkit-scrollbar-thumb { background:var(--line); border-radius:8px; border:2px solid var(--bg); }
+  ::-webkit-scrollbar-track { background:transparent; }
 
-  /* ---------- top bar ---------- */
-  .topbar { height:52px; display:flex; align-items:center; gap:14px; padding:0 14px; background:linear-gradient(180deg,#151b26,#10141c); border-bottom:1px solid var(--line); }
-  .brand { display:flex; align-items:center; gap:9px; padding-right:8px; }
-  .logo { width:26px; height:26px; border-radius:8px; background:linear-gradient(135deg,#3b7bff,#5ee0a0); display:grid; place-items:center; font-weight:700; font-size:14px; color:#0b0f16; }
+  .topbar { height:54px; display:flex; align-items:center; gap:14px; padding:0 14px; background:var(--panel); border-bottom:1px solid var(--line); box-shadow:var(--shadow); position:relative; z-index:5; }
+  .brand { display:flex; align-items:center; gap:9px; }
+  .logo { width:28px; height:28px; border-radius:9px; background:linear-gradient(135deg,#3b7bff,#5ee0a0); display:grid; place-items:center; font-weight:700; font-size:14px; color:#0b0f16; }
   .brand-name { font-size:15px; font-weight:600; letter-spacing:.5px; }
-  .search { flex:0 1 380px; max-width:380px; display:flex; align-items:center; gap:8px; background:#0b0f16; border:1px solid var(--line); border-radius:9px; padding:6px 10px; }
+  .search { flex:0 1 360px; display:flex; align-items:center; gap:8px; background:var(--panel-2); border:1px solid var(--line); border-radius:10px; padding:7px 11px; transition:border-color .15s, box-shadow .15s; }
+  .search:focus-within { border-color:var(--accent); box-shadow:0 0 0 3px var(--accent-soft); }
   .search input { flex:1; background:transparent; border:0; outline:0; color:var(--ink); font-size:13px; }
   .search .hint { color:var(--ink-2); font-size:11px; }
-  .top-right { margin-left:auto; display:flex; align-items:center; gap:10px; }
-  .chip { font-size:11px; color:var(--ink-2); border:1px solid var(--line); border-radius:999px; padding:3px 9px; }
-  .chip.strong { color:#b8ccff; border-color:#2b3a58; background:#141c2b; }
-  .chip.update { color:#0b0f16; background:var(--accent-2); border-color:transparent; cursor:pointer; font-weight:600; }
+  .top-right { margin-left:auto; display:flex; align-items:center; gap:8px; }
+  .chip { font-size:11px; color:var(--ink-2); border:1px solid var(--line); border-radius:999px; padding:4px 10px; background:var(--panel-2); }
+  .chip.update { color:#0b0f16; background:var(--ok); border-color:transparent; cursor:pointer; font-weight:600; }
+  .icon-btn { width:32px; height:32px; display:grid; place-items:center; border-radius:9px; border:1px solid var(--line); background:var(--panel-2); color:var(--ink-2); cursor:pointer; transition:.15s; }
+  .icon-btn:hover { color:var(--ink); border-color:var(--accent); }
 
-  /* ---------- shell ---------- */
-  .shell { display:flex; height:calc(100vh - 52px); }
-  .sidebar { width:206px; flex:0 0 206px; background:#0f131b; border-right:1px solid var(--line); padding:12px 10px; display:flex; flex-direction:column; gap:4px; }
-  .nav-title { font-size:10.5px; letter-spacing:1.4px; color:#5c6779; padding:8px 10px 4px; text-transform:uppercase; }
-  .nav { display:flex; align-items:center; gap:10px; padding:9px 10px; border-radius:8px; color:#b9c3d4; cursor:pointer; border:1px solid transparent; }
-  .nav:hover { background:#141a24; }
-  .nav.active { background:#182131; border-color:#26364f; color:#fff; }
-  .nav .ico { width:16px; height:16px; opacity:.9; }
-  .nav .badge { margin-left:auto; font-size:11px; color:var(--accent-2); }
-  .side-foot { margin-top:auto; padding:10px; border-top:1px solid var(--line); color:var(--ink-2); font-size:11px; line-height:1.7; }
-  .side-foot b { color:#cdd6e6; font-weight:600; }
+  .shell { display:flex; height:calc(100vh - 54px); }
+  .sidebar { width:208px; flex:0 0 208px; background:var(--panel); border-right:1px solid var(--line); padding:12px 10px; display:flex; flex-direction:column; gap:3px; }
+  .nav-title { font-size:10.5px; letter-spacing:1.4px; color:var(--ink-2); padding:8px 10px 6px; text-transform:uppercase; opacity:.75; }
+  .nav { display:flex; align-items:center; gap:10px; padding:9px 10px; border-radius:9px; color:var(--ink-2); cursor:pointer; border:1px solid transparent; transition:.15s; }
+  .nav:hover { background:var(--panel-2); color:var(--ink); }
+  .nav.active { background:var(--accent-soft); border-color:color-mix(in srgb, var(--accent) 35%, transparent); color:var(--ink); font-weight:600; }
+  .nav .ico { width:16px; height:16px; }
+  .nav .badge { margin-left:auto; font-size:11px; color:var(--accent); }
+  .side-foot { margin-top:auto; padding:12px 10px 6px; border-top:1px solid var(--line); color:var(--ink-2); font-size:11px; line-height:1.8; }
+  .side-foot b { color:var(--ink); font-weight:600; }
 
-  .content { flex:1; overflow:auto; padding:22px 26px 32px; scrollbar-width:thin; }
+  .content { flex:1; overflow:auto; padding:22px 26px 40px; }
   .page { display:none; max-width:1180px; }
-  .page.active { display:block; }
-  .page h2 { margin:0 0 4px; font-size:18px; font-weight:600; }
-  .page .sub { margin:0 0 18px; color:var(--ink-2); font-size:12px; }
+  .page.active { display:block; animation:fade .18s ease; }
+  @keyframes fade { from { opacity:0; transform:translateY(4px);} to { opacity:1; transform:none; } }
+  .page-head { display:flex; align-items:flex-end; justify-content:space-between; gap:12px; margin-bottom:16px; }
+  .page h2 { margin:0; font-size:19px; font-weight:600; }
+  .page .sub { margin:4px 0 0; color:var(--ink-2); font-size:12px; }
 
-  .card { background:var(--panel); border:1px solid var(--line); border-radius:12px; padding:16px; margin-bottom:16px; }
-  .card h3 { margin:0 0 12px; font-size:13px; font-weight:600; color:#cfd8e8; letter-spacing:.3px; }
+  .card { background:var(--panel); border:1px solid var(--line); border-radius:14px; padding:16px; margin-bottom:16px; box-shadow:0 1px 0 rgba(255,255,255,.02); }
+  .card h3 { margin:0 0 12px; font-size:13px; font-weight:600; color:var(--ink); letter-spacing:.3px; }
   .row { display:flex; gap:10px; flex-wrap:wrap; align-items:center; }
   .field { display:flex; flex-direction:column; gap:5px; }
   .field label { font-size:11px; color:var(--ink-2); }
-  input[type=text], input:not([type]) { background:#0b0f16; border:1px solid var(--line); color:var(--ink); padding:8px 10px; border-radius:8px; font-size:13px; outline:0; }
-  input:focus { border-color:#33518a; }
-  button { background:var(--accent); color:#fff; border:0; border-radius:8px; padding:8px 14px; font-size:12.5px; cursor:pointer; }
-  button.ghost { background:#182031; color:#c7d2e4; border:1px solid var(--line); }
+  input { background:var(--panel-2); border:1px solid var(--line); color:var(--ink); padding:8px 10px; border-radius:9px; font-size:13px; outline:0; transition:.15s; }
+  input:focus { border-color:var(--accent); box-shadow:0 0 0 3px var(--accent-soft); }
+  button { background:var(--accent); color:#fff; border:0; border-radius:9px; padding:9px 15px; font-size:12.5px; cursor:pointer; transition:.15s; }
+  button:hover:not(:disabled) { filter:brightness(1.08); }
+  button.ghost { background:var(--panel-2); color:var(--ink); border:1px solid var(--line); }
+  button.ghost:hover:not(:disabled) { border-color:var(--accent); }
   button:disabled { opacity:.45; cursor:not-allowed; }
-  .verdict { margin-top:14px; font-size:13px; }
-  .ok { color:var(--accent-2); } .bad { color:var(--danger); } .muted { color:var(--ink-2); }
+  :focus-visible { outline:2px solid var(--accent); outline-offset:2px; }
 
-  .bar { height:8px; background:#0b0f16; border:1px solid var(--line); border-radius:999px; overflow:hidden; }
-  .bar > i { display:block; height:100%; width:0%; background:linear-gradient(90deg,#3b7bff,#5ee0a0); transition:width .3s; }
+  .ok { color:var(--ok); } .bad { color:var(--danger); } .muted { color:var(--ink-2); }
+  .bar { height:8px; background:var(--panel-2); border:1px solid var(--line); border-radius:999px; overflow:hidden; }
+  .bar > i { display:block; height:100%; width:0%; background:linear-gradient(90deg,var(--accent),var(--ok)); transition:width .3s; }
   table { width:100%; border-collapse:collapse; font-size:12px; }
-  th { text-align:left; color:#7d8798; font-weight:500; padding:6px 8px; border-bottom:1px solid var(--line); }
-  td { padding:7px 8px; border-bottom:1px solid #1a2130; }
-  pre { margin:0; background:#0b0f16; border:1px solid var(--line); border-radius:9px; padding:10px; font-size:11.5px; max-height:260px; overflow:auto; }
+  th { text-align:left; color:var(--ink-2); font-weight:500; padding:7px 8px; border-bottom:1px solid var(--line); }
+  td { padding:8px; border-bottom:1px solid var(--line); }
+  pre { margin:0; background:var(--panel-2); border:1px solid var(--line); border-radius:10px; padding:11px; font-size:11.5px; max-height:250px; overflow:auto; }
 
-  .grid2 { display:grid; grid-template-columns:1fr 1fr; gap:14px; }
-  .stat { background:var(--panel-2); border:1px solid var(--line); border-radius:10px; padding:12px; }
-  .stat .k { font-size:11px; color:var(--ink-2); }
-  .stat .v { font-size:18px; font-weight:600; margin-top:4px; }
+  /* game list */
+  .gamelist { display:grid; gap:10px; }
+  .game { display:flex; align-items:center; gap:14px; padding:13px 14px; background:var(--panel-2); border:1px solid var(--line); border-radius:12px; transition:.15s; }
+  .game:hover { border-color:var(--accent); transform:translateY(-1px); }
+  .game .cover { width:44px; height:44px; border-radius:10px; background:linear-gradient(135deg,var(--accent),var(--ok)); display:grid; place-items:center; font-weight:700; color:#08101c; font-size:13px; }
+  .game .meta { flex:1; min-width:0; }
+  .game .title { font-weight:600; }
+  .game .path { color:var(--ink-2); font-size:11.5px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .game .size { color:var(--ink-2); font-size:12px; white-space:nowrap; }
+  .empty { text-align:center; color:var(--ink-2); padding:26px 10px; border:1px dashed var(--line); border-radius:12px; }
 
-  /* ---------- overlay ---------- */
-  #overlay { position:fixed; inset:0; background:rgba(6,9,14,.74); display:none; align-items:center; justify-content:center; z-index:30; }
+  /* toast */
+  #toasts { position:fixed; right:18px; top:66px; display:flex; flex-direction:column; gap:8px; z-index:40; }
+  .toast { background:var(--panel); border:1px solid var(--line); border-left:3px solid var(--accent); border-radius:10px; padding:10px 14px; box-shadow:var(--shadow); font-size:12.5px; animation:slide .2s ease; }
+  .toast.ok { border-left-color:var(--ok); } .toast.bad { border-left-color:var(--danger); }
+  @keyframes slide { from { opacity:0; transform:translateX(12px);} to {opacity:1; transform:none;} }
+
+  /* overlay */
+  #overlay { position:fixed; inset:0; background:rgba(6,9,14,.72); display:none; align-items:center; justify-content:center; z-index:30; }
   #overlay.show { display:flex; }
-  .modal { width:520px; background:var(--panel);  border-radius:14px; padding:22px; }
-  .modal { border:1px solid #2c3a54; }
+  .modal { width:520px; background:var(--panel); border:1px solid var(--line); border-radius:16px; padding:22px; box-shadow:var(--shadow); }
   .modal h2 { margin:0 0 8px; font-size:16px; }
   .modal p { margin:0 0 12px; color:var(--ink-2); font-size:12.5px; }
   .modal .actions { display:flex; gap:10px; justify-content:flex-end; margin-top:16px; }
@@ -96,8 +112,9 @@
     </div>
     <div class="top-right">
       <span class="chip" id="version">v-</span>
-      <span class="chip strong" id="modeTag">-</span>
+      <span class="chip" id="modeTag">-</span>
       <span class="chip update" id="updateBadge" style="display:none">有新版本</span>
+      <div class="icon-btn" id="themeBtn" title="切换主题">☾</div>
     </div>
   </div>
 
@@ -119,17 +136,22 @@
       <div class="side-foot">
         <div>密钥 <b id="keyCount">-</b></div>
         <div>清单索引 <b id="depotCount">-</b></div>
-        <div id="settingsPath" class="muted" style="margin-top:6px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis" title=""></div>
+        <div id="settingsPath" style="margin-top:6px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis"></div>
       </div>
     </aside>
 
     <main class="content">
-      <!-- library -->
       <section class="page active" id="page-library">
-        <h2>游戏库</h2>
-        <p class="sub">输入 AppID 检查可下载性，然后选择安装位置开始下载。</p>
+        <div class="page-head">
+          <div><h2>游戏库</h2><p class="sub">已安装的游戏来自游戏目录；输入 AppID 可以安装新游戏。</p></div>
+          <button class="ghost" id="refreshGames">刷新列表</button>
+        </div>
         <div class="card">
-          <h3>下载游戏</h3>
+          <h3>已安装</h3>
+          <div class="gamelist" id="gameList"></div>
+        </div>
+        <div class="card">
+          <h3>安装新游戏</h3>
           <div class="row">
             <div class="field"><label>AppID</label><input id="libAppid" value="480" style="width:120px" /></div>
             <div class="field" style="flex:1;min-width:280px"><label>安装目录</label><input id="target" value="" style="width:100%" /></div>
@@ -138,7 +160,7 @@
           <div class="row" style="margin-top:12px">
             <button id="check">检查可用性</button>
             <button id="start" class="ghost" disabled>开始下载</button>
-            <span id="verdict" class="verdict muted">等待检查…</span>
+            <span id="verdict" class="muted">等待检查…</span>
           </div>
         </div>
         <div class="card">
@@ -147,26 +169,17 @@
         </div>
       </section>
 
-      <!-- tasks -->
       <section class="page" id="page-tasks">
-        <h2>下载任务</h2>
-        <p class="sub">当前任务的进度与事件日志。</p>
+        <div class="page-head"><div><h2>下载任务</h2><p class="sub">当前任务的进度与事件日志。</p></div></div>
         <div class="card">
-          <div class="row" style="justify-content:space-between">
-            <h3 style="margin:0">进度</h3><span id="stats" class="muted">空闲</span>
-          </div>
+          <div class="row" style="justify-content:space-between"><h3 style="margin:0">进度</h3><span id="stats" class="muted">空闲</span></div>
           <div class="bar" style="margin-top:10px"><i id="fill"></i></div>
         </div>
-        <div class="card">
-          <h3>事件日志</h3>
-          <pre id="log"></pre>
-        </div>
+        <div class="card"><h3>事件日志</h3><pre id="log"></pre></div>
       </section>
 
-      <!-- settings -->
       <section class="page" id="page-settings">
-        <h2>设置</h2>
-        <p class="sub">路径修改后会做写权限校验；切换数据目录可选择迁移已有数据。</p>
+        <div class="page-head"><div><h2>设置</h2><p class="sub">路径修改后会做写权限校验；切换数据目录可选择迁移已有数据。</p></div></div>
         <div class="card">
           <h3>目录</h3>
           <div class="row" style="margin-bottom:10px">
@@ -201,23 +214,22 @@
         </div>
       </section>
 
-      <!-- about -->
       <section class="page" id="page-about">
-        <h2>关于</h2>
-        <p class="sub">云驿 · RelayStore —— 精简的分发与安装客户端。</p>
-        <div class="grid2">
-          <div class="stat"><div class="k">版本</div><div class="v" id="aboutVersion">-</div></div>
-          <div class="stat"><div class="k">运行模式</div><div class="v" id="aboutMode">-</div></div>
-          <div class="stat"><div class="k">密钥条目</div><div class="v" id="aboutKeys">-</div></div>
-          <div class="stat"><div class="k">清单索引</div><div class="v" id="aboutDepots">-</div></div>
+        <div class="page-head"><div><h2>关于</h2><p class="sub">云驿 · RelayStore —— 精简的分发与安装客户端。</p></div></div>
+        <div class="card">
+          <div class="gamelist" style="grid-template-columns:1fr 1fr">
+            <div class="game"><div class="cover">版</div><div class="meta"><div class="title" id="aboutVersion">-</div><div class="path">版本</div></div></div>
+            <div class="game"><div class="cover">式</div><div class="meta"><div class="title" id="aboutMode">-</div><div class="path">运行模式</div></div></div>
+            <div class="game"><div class="cover">钥</div><div class="meta"><div class="title" id="aboutKeys">-</div><div class="path">密钥条目</div></div></div>
+            <div class="game"><div class="cover">索</div><div class="meta"><div class="title" id="aboutDepots">-</div><div class="path">清单索引</div></div></div>
+          </div>
         </div>
-        <div class="card" style="margin-top:16px">
-          <h3>发布与更新</h3>
-          <p class="muted" style="margin:0">发布页面：<span id="releaseUrl">github.com/zymaicode/RelayStore</span></p>
-        </div>
+        <div class="card"><h3>发布与更新</h3><p class="muted" style="margin:0">发布页面：github.com/zymaicode/RelayStore</p></div>
       </section>
     </main>
   </div>
+
+  <div id="toasts"></div>
 
   <div id="overlay">
     <div class="modal">
@@ -225,10 +237,7 @@
       <p id="modalText">首次启动需要下载密钥语料（约 30 MB，来自社区镜像）。不下载的话无法判断游戏能否下载。</p>
       <div class="bar"><i id="dataFill"></i></div>
       <p id="dataStatus" class="muted" style="margin-top:8px">等待确认…</p>
-      <div class="actions">
-        <button class="ghost" id="later">稍后</button>
-        <button id="downloadData">下载数据</button>
-      </div>
+      <div class="actions"><button class="ghost" id="later">稍后</button><button id="downloadData">下载数据</button></div>
     </div>
   </div>
 
