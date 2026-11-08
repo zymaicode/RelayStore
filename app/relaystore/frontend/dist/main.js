@@ -69,6 +69,7 @@ function renderSources() {
     currentSource = src.id;
     renderSources();
     showPage("store");
+    $("storeQuery").value = "";
     await loadStore("");
   }));
 }
@@ -333,11 +334,13 @@ function renderStoreList(games) {
 
 async function loadStore(query) {
   try {
-    const games = query ? await app().StoreSearch(query) : (await app().StoreCatalog()).games;
-    renderStoreList(games);
-    if (!query) {
-      const meta = await app().StoreCatalog();
-      $("storeUpdated").textContent = "榜单 " + meta.updated;
+    const result = await app().StoreList(currentSource, query || "");
+    renderStoreList(result.games || []);
+    if (result.updated) $("storeUpdated").textContent = "榜单 " + result.updated;
+    if (result.error) toast(result.error, "bad");
+    if (result.hint) toast(result.hint, "bad");
+    if ((!result.games || !result.games.length) && result.hint) {
+      $("storeList").innerHTML = '<div class="empty">' + result.hint + '</div>';
     }
   } catch (err) { toast("商店加载失败：" + err, "bad"); }
 }
