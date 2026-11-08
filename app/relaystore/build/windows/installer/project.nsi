@@ -1,4 +1,4 @@
-Unicode true
+﻿Unicode true
 
 ## RelayStore overrides: per-user install, default folder on D:, Chinese product name.
 !define REQUEST_EXECUTION_LEVEL "user"
@@ -101,6 +101,17 @@ Section
     !insertmacro wails.associateFiles
     !insertmacro wails.associateCustomProtocols
 
+
+    ## RelayStore: explicit Add/Remove Programs entry (per-user)
+    WriteRegStr HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\RelayStore" "DisplayName" "${INFO_PRODUCTNAME}"
+    WriteRegStr HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\RelayStore" "Publisher" "${INFO_COMPANYNAME}"
+    WriteRegStr HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\RelayStore" "DisplayVersion" "${INFO_PRODUCTVERSION}"
+    WriteRegStr HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\RelayStore" "InstallLocation" "$INSTDIR"
+    WriteRegStr HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\RelayStore" "DisplayIcon" "$INSTDIR\${PRODUCT_EXECUTABLE}"
+    WriteRegStr HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\RelayStore" "UninstallString" "$\"$INSTDIR\uninstall.exe$\""
+    WriteRegStr HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\RelayStore" "QuietUninstallString" "$\"$INSTDIR\uninstall.exe$\" /S"
+    WriteRegDWORD HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\RelayStore" "NoModify" 1
+    WriteRegDWORD HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\RelayStore" "NoRepair" 1
     !insertmacro wails.writeUninstaller
 SectionEnd
 
@@ -117,5 +128,6 @@ Section "uninstall"
     !insertmacro wails.unassociateFiles
     !insertmacro wails.unassociateCustomProtocols
 
+    DeleteRegKey HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\RelayStore"
     !insertmacro wails.deleteUninstaller
 SectionEnd
