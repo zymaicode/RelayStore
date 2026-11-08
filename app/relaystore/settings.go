@@ -27,7 +27,7 @@ type Settings struct {
 }
 
 // ThemeNames lists the bundled themes (ported from CodeForge).
-var ThemeNames = []string{"light", "dark", "animal", "wenyang"}
+var ThemeNames = []string{"system", "light", "dark", "animal", "wenyang"}
 
 // FontSizeNames lists the UI density presets.
 var FontSizeNames = []string{"compact", "standard", "relaxed"}
@@ -47,7 +47,7 @@ func normalizeTheme(name string) string {
 			return name
 		}
 	}
-	return "light"
+	return "system"
 }
 
 func exeDir() string {
@@ -83,7 +83,7 @@ func defaultSettings() Settings {
 			DepotWorkers: 2,
 			ChunkWorkers: 8,
 			CheckUpdates: true,
-			Theme:        "light",
+			Theme:        "system",
 			FontSize:     "standard",
 		}
 	}
@@ -93,7 +93,7 @@ func defaultSettings() Settings {
 		DepotWorkers: 2,
 		ChunkWorkers: 8,
 		CheckUpdates: true,
-		Theme:        "light",
+		Theme:        "system",
 		FontSize:     "standard",
 	}
 }

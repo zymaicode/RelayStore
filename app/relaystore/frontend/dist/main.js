@@ -28,6 +28,7 @@ function log(line) {
 
 /* ---------- theme (four CodeForge themes) ---------- */
 const THEMES = [
+  { id: "system", name: "跟随系统", thumb: "./thumbs/theme-system.png" },
   { id: "light", name: "浅色", thumb: "./thumbs/theme-light.png" },
   { id: "dark", name: "深色", thumb: "./thumbs/theme-dark.png" },
   { id: "animal", name: "森友会", thumb: "./thumbs/theme-animal.png" },
@@ -59,11 +60,29 @@ function renderSizePicker(current) {
   }));
 }
 
-function applyTheme(name) {
-  document.documentElement.dataset.theme = name || "light";
+let themeChoice = "system";
+
+function resolveTheme(choice) {
+  if (choice === "system") {
+    return window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+  }
+  return choice || "light";
+}
+
+function applyTheme(choice) {
+  themeChoice = choice || "system";
+  const resolved = resolveTheme(themeChoice);
+  document.documentElement.dataset.theme = resolved;
   const btn = $("themeBtn");
-  if (btn) btn.textContent = name === "dark" ? "☀" : "☾";
-  document.querySelectorAll(".theme-opt").forEach((el) => el.classList.toggle("active", el.dataset.theme === name));
+  if (btn) btn.textContent = resolved === "dark" ? "☀" : "☾";
+  document.querySelectorAll(".theme-opt").forEach((el) => el.classList.toggle("active", el.dataset.theme === themeChoice));
+}
+
+if (window.matchMedia) {
+  const mq = window.matchMedia("(prefers-color-scheme: dark)");
+  const onChange = () => { if (themeChoice === "system") applyTheme("system"); };
+  if (mq.addEventListener) mq.addEventListener("change", onChange);
+  else if (mq.addListener) mq.addListener(onChange);
 }
 
 function renderThemePicker(current) {

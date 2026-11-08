@@ -272,6 +272,16 @@
   }
   html[data-theme="animal"] .card { box-shadow: var(--sh-2), inset 0 0 0 1px rgba(189,174,160,.45); }
   html[data-theme="animal"] .theme-opt { border-style: dashed; }
+  /* 贴纸高光：左上 1px 白高光 + 右下暖描边 */
+  html[data-theme="animal"] .card,
+  html[data-theme="animal"] .game,
+  html[data-theme="animal"] button,
+  html[data-theme="animal"] input {
+    box-shadow: var(--sh-1), inset 1.5px 1.5px 0 rgba(255,255,255,.92), inset 0 0 0 1px rgba(189,174,160,.5);
+  }
+  html[data-theme="animal"] .card {
+    box-shadow: var(--sh-2), inset 1.5px 1.5px 0 rgba(255,255,255,.92), inset 0 0 0 1px rgba(189,174,160,.45);
+  }
   html[data-theme="animal"] .size-opt { background: #f8f8f0; color: #794f27; }
   html[data-theme="animal"] .size-opt.active { background: var(--accent); color: #fff; }
 
@@ -286,6 +296,17 @@
   html[data-theme="wenyang"] .game { border-color: #c9a85c; }
   html[data-theme="wenyang"] .nav.active { border-color: #c9a85c; }
   html[data-theme="wenyang"] .logo { background: var(--accent); color: var(--accent-fg); }
+  /* 回纹角饰：四角双层转角线（窗棂感） */
+  html[data-theme="wenyang"] .card {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 16 16' fill='none' stroke='%23c9a85c' stroke-width='1.1' opacity='0.85'%3E%3Cg transform='rotate(0 8 8)'%3E%3Cpath d='M1 15V7a6 6 0 0 1 6-6h8'/%3E%3Cpath d='M4.5 15V9a3.5 3.5 0 0 1 3.5-3.5h7'/%3E%3C/g%3E%3C/svg%3E"), url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 16 16' fill='none' stroke='%23c9a85c' stroke-width='1.1' opacity='0.85'%3E%3Cg transform='rotate(90 8 8)'%3E%3Cpath d='M1 15V7a6 6 0 0 1 6-6h8'/%3E%3Cpath d='M4.5 15V9a3.5 3.5 0 0 1 3.5-3.5h7'/%3E%3C/g%3E%3C/svg%3E"), url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 16 16' fill='none' stroke='%23c9a85c' stroke-width='1.1' opacity='0.85'%3E%3Cg transform='rotate(270 8 8)'%3E%3Cpath d='M1 15V7a6 6 0 0 1 6-6h8'/%3E%3Cpath d='M4.5 15V9a3.5 3.5 0 0 1 3.5-3.5h7'/%3E%3C/g%3E%3C/svg%3E"), url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 16 16' fill='none' stroke='%23c9a85c' stroke-width='1.1' opacity='0.85'%3E%3Cg transform='rotate(180 8 8)'%3E%3Cpath d='M1 15V7a6 6 0 0 1 6-6h8'/%3E%3Cpath d='M4.5 15V9a3.5 3.5 0 0 1 3.5-3.5h7'/%3E%3C/g%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: left 7px top 7px, right 7px top 7px, left 7px bottom 7px, right 7px bottom 7px;
+    background-size: 16px 16px;
+  }
+  html[data-theme="wenyang"] .game::before {
+    content: ""; position: absolute; inset: 5px; border-left: 1px solid rgba(201,168,92,.55); border-top: 1px solid rgba(201,168,92,.55); pointer-events: none;
+  }
+  html[data-theme="wenyang"] .game { position: relative; }
   html[data-theme="wenyang"] .size-opt { background: #fffbf0; color: #2b1d0e; border: 1.5px solid var(--card-bd); box-shadow: none; }
   html[data-theme="wenyang"] .size-opt.active { background: var(--accent); color: var(--accent-fg); border-color: #9a1818; }
 
