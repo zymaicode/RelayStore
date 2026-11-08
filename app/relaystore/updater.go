@@ -94,11 +94,19 @@ func httpGetOnce(url string) ([]byte, error) {
 	return body, nil
 }
 
+// metadataURL honours RELAYSTORE_UPDATE_URL so tests and mirrors can override it.
+func metadataURL() string {
+	if custom := os.Getenv("RELAYSTORE_UPDATE_URL"); custom != "" {
+		return custom
+	}
+	return latestRawURL
+}
+
 // fetchUpdateMeta reads the release, then the latest.json asset inside it.
 func fetchUpdateMeta() (updateMeta, releaseInfo, error) {
 	var meta updateMeta
 	// try the raw endpoint first (fast, no redirect to a throttled object host)
-	if raw, err := httpGet(latestRawURL); err == nil {
+	if raw, err := httpGet(metadataURL()); err == nil {
 		if err := json.Unmarshal(raw, &meta); err == nil && meta.Version != "" {
 			release := releaseInfo{Tag: meta.Version, HTML: "https://github.com/zymaicode/RelayStore/releases/tag/" + meta.Version}
 			release.Assets = append(release.Assets,
