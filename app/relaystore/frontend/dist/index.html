@@ -124,6 +124,9 @@
       <div class="nav active" data-page="library">
         <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="4" width="7" height="7" rx="1.5"/><rect x="14" y="4" width="7" height="7" rx="1.5"/><rect x="3" y="13" width="7" height="7" rx="1.5"/><rect x="14" y="13" width="7" height="7" rx="1.5"/></svg><span>游戏库</span>
       </div>
+      <div class="nav" data-page="store">
+        <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M5 8h14l-1.2 10.2a2 2 0 0 1-2 1.8H8.2a2 2 0 0 1-2-1.8L5 8z"/><path d="M9 8V6.5a3 3 0 0 1 6 0V8"/></svg><span>商店</span>
+      </div>
       <div class="nav" data-page="tasks">
         <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 4v10"/><path d="M8 11l4 4 4-4"/><path d="M4 18h16"/></svg><span>下载任务</span><span class="badge" id="taskBadge"></span>
       </div>
@@ -166,6 +169,37 @@
         <div class="card">
           <h3>Depot 明细</h3>
           <table id="depots"><tr><td class="muted">检查后显示</td></tr></table>
+        </div>
+      </section>
+
+      <section class="page" id="page-store">
+        <div class="page-head">
+          <div><h2>商店</h2><p class="sub">内置热门榜单（按热度排序）；搜索支持名称关键字或直接输入 AppID。</p></div>
+          <span class="chip" id="storeUpdated">-</span>
+        </div>
+        <div class="card">
+          <div class="row">
+            <input id="storeQuery" placeholder="搜索游戏名称，或输入 AppID" style="flex:1;min-width:280px" />
+            <button id="storeSearch">搜索</button>
+            <button class="ghost" id="storeReset">显示全部</button>
+          </div>
+        </div>
+        <div class="card">
+          <h3>热门游戏</h3>
+          <div class="gamelist" id="storeList"></div>
+        </div>
+        <div class="card" id="storeDetail" style="display:none">
+          <h3 id="storeDetailName">-</h3>
+          <div class="row" style="margin-bottom:10px">
+            <span class="chip" id="storeDetailAppid">-</span>
+            <span class="muted" id="storeDetailPath"></span>
+          </div>
+          <div class="row">
+            <button id="storeCheck">检查可用性</button>
+            <button id="storeStart" class="ghost" disabled>下载到游戏目录</button>
+            <span id="storeVerdict" class="muted">先检查可用性</span>
+          </div>
+          <table id="storeDepots" style="margin-top:12px"></table>
         </div>
       </section>
 

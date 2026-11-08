@@ -47,8 +47,8 @@ function showPage(name) {
 document.querySelectorAll(".nav").forEach((nav) => nav.addEventListener("click", () => showPage(nav.dataset.page)));
 document.addEventListener("keydown", (e) => {
   if (!e.ctrlKey) return;
-  const map = { "1": "library", "2": "tasks", "3": "settings", "4": "about" };
-  if (map[e.key]) { e.preventDefault(); showPage(map[e.key]); toast("切换到 " + map[e.key]); }
+  const map = { "1": "library", "2": "store", "3": "tasks", "4": "settings", "5": "about" };
+  if (map[e.key]) { e.preventDefault(); showPage(map[e.key]); }
 });
 
 /* ---------- data ---------- */
@@ -111,7 +111,7 @@ async function loadSettings() {
 
 async function syncTarget() {
   const appid = Number($("libAppid").value || $("appid").value);
-  $("target").value = await app().GamePath(appid);
+  $("target").value = await app().InstallPathFor(appid);
 }
 
 /* ---------- coverage / restore ---------- */
@@ -273,11 +273,98 @@ window.runtime.EventsOn("update:progress", (info) => {
   if (info.stage === "verified") $("updateHint").textContent = "校验通过";
 });
 
+/* ---------- store ---------- */
+let storeSelected = null;
+
+function renderStoreList(games) {
+  const list = $("storeList");
+  if (!games.length) {
+    list.innerHTML = '<div class="empty">没有匹配的游戏<br/><span style="font-size:11.5px">换个关键字，或直接输入 AppID</span></div>';
+    return;
+  }
+  list.innerHTML = games.map((g, i) => {
+    const name = g.name || ("AppID " + g.appid);
+    const initial = name.trim().slice(0, 1).toUpperCase();
+    return '<div class="game" data-appid="' + g.appid + '" data-name="' + name.replace(/"/g, "&quot;") + '" style="cursor:pointer">' +
+      '<div class="cover">' + initial + '</div>' +
+      '<div class="meta"><div class="title">' + name + '</div>' +
+      '<div class="path">AppID ' + g.appid + (g.name ? "" : " · 未在内置榜单") + '</div></div>' +
+      '<div class="size">#' + (i + 1) + '</div>' +
+      '</div>';
+  }).join("");
+  list.querySelectorAll("[data-appid]").forEach((row) => row.addEventListener("click", () => {
+    selectStoreGame(Number(row.dataset.appid), row.dataset.name);
+  }));
+}
+
+async function loadStore(query) {
+  try {
+    const games = query ? await app().StoreSearch(query) : (await app().StoreCatalog()).games;
+    renderStoreList(games);
+    if (!query) {
+      const meta = await app().StoreCatalog();
+      $("storeUpdated").textContent = "榜单 " + meta.updated;
+    }
+  } catch (err) { toast("商店加载失败：" + err, "bad"); }
+}
+
+async function selectStoreGame(appid, name) {
+  storeSelected = { appid, name };
+  $("storeDetail").style.display = "block";
+  $("storeDetailName").textContent = name || ("AppID " + appid);
+  $("storeDetailAppid").textContent = "AppID " + appid;
+  $("storeVerdict").textContent = "先检查可用性";
+  $("storeStart").disabled = true;
+  $("storeDepots").innerHTML = "";
+  const path = await app().InstallPathFor(appid);
+  $("storeDetailPath").textContent = "安装到：" + path;
+  storeSelected.path = path;
+  $("storeDetail").scrollIntoView({ behavior: "smooth", block: "nearest" });
+}
+
+async function storeCheck() {
+  if (!storeSelected) return;
+  $("storeVerdict").textContent = "检查中…";
+  try {
+    const report = JSON.parse(await app().Coverage(storeSelected.appid));
+    $("storeVerdict").innerHTML = report.downloadable
+      ? '<span class="ok">✔ 可以下载</span> · ' + report.depots_total + " depot · " + fmtBytes(report.size_bytes)
+      : '<span class="bad">✘ 缺少依赖</span> · 缺 ' + (report.depots_total - report.downloadable_depots) + " 个 depot";
+    const rows = ["<tr><th>depot</th><th>key</th><th>manifest</th><th>size</th></tr>"];
+    for (const d of report.depots) {
+      rows.push("<tr><td>" + d.depot_id + "</td><td>" + (d.has_key ? '<span class="ok">有</span>' : '<span class="bad">缺</span>') + "</td><td>" +
+        (d.manifest_status === 200 ? '<span class="ok">200</span>' : (d.index_gids > 0 ? "回退(" + d.index_gids + ")" : '<span class="bad">' + d.manifest_status + "</span>")) +
+        "</td><td>" + (d.size / 1048576).toFixed(1) + " MB</td></tr>");
+    }
+    $("storeDepots").innerHTML = rows.join("");
+    $("storeStart").disabled = !report.downloadable;
+  } catch (err) { $("storeVerdict").textContent = "检查失败：" + err; }
+}
+
+async function storeStartDownload() {
+  if (!storeSelected) return;
+  const depotWorkers = Number($("depotWorkers").value) || 2;
+  $("storeStart").disabled = true;
+  $("fill").style.width = "5%";
+  $("taskBadge").textContent = "进行中";
+  showPage("tasks");
+  log("[store] 下载 " + (storeSelected.name || storeSelected.appid) + " -> " + storeSelected.path);
+  try { await app().Restore(storeSelected.appid, storeSelected.path, depotWorkers); }
+  catch (err) { log("[store] 失败: " + err); toast("下载启动失败：" + err, "bad"); $("storeStart").disabled = false; }
+}
+
+$("storeSearch").addEventListener("click", () => loadStore($("storeQuery").value));
+$("storeQuery").addEventListener("keydown", (e) => { if (e.key === "Enter") loadStore($("storeQuery").value); });
+$("storeReset").addEventListener("click", () => { $("storeQuery").value = ""; loadStore(""); });
+$("storeCheck").addEventListener("click", storeCheck);
+$("storeStart").addEventListener("click", storeStartDownload);
+
 (async function boot() {
   log("[boot] 云驿启动");
   await loadSettings();
   const data = await refreshData();
   await loadGames();
+  await loadStore("");
   await syncTarget();
   await checkUpdate();
   if (data.needsData) log("[boot] 缺少数据，请按提示下载");
