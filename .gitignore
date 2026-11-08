@@ -18,7 +18,11 @@ tools/bin/
 **/*.exe
 **/*.dll
 **/*.pdb
-app/relaystore/build/
+# keep installer template + icons tracked; ignore build outputs only
+app/relaystore/build/bin/
+app/relaystore/build/darwin/
+app/relaystore/build/windows/installer/tmp/
+app/relaystore/build/windows/installer/wails_tools.nsh
 app/relaystore/frontend/wailsjs/
 app/relaystore/frontend/node_modules/
 node_modules/
