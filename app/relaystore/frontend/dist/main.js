@@ -217,10 +217,21 @@ async function loadGames() {
       "</div>" +
       '<div class="size">' + fmtBytes(g.bytes) + ' · ' + g.files + ' 个文件</div>' +
       (canLaunch ? '<button data-launch="' + g.appid + '">启动</button>' : "") +
+      '<button class="ghost" data-exe="' + g.appid + '" title="指定主程序">主程序</button>' +
+      '<button class="ghost" data-refresh="' + g.appid + '" title="重新检测">重检</button>' +
       '<button class="ghost" data-open="' + g.path.replace(/"/g, "&quot;") + '">打开目录</button>' +
       '</div>';
   }).join("");
   list.querySelectorAll("[data-open]").forEach((btn) => btn.addEventListener("click", () => app().OpenPath(btn.dataset.open)));
+  list.querySelectorAll("[data-refresh]").forEach((btn) => btn.addEventListener("click", async () => {
+    await app().RefreshInspection(Number(btn.dataset.refresh));
+    await loadGames();
+    toast("已重新检测", "ok");
+  }));
+  list.querySelectorAll("[data-exe]").forEach((btn) => btn.addEventListener("click", async () => {
+    const chosen = await app().PickGameExe(Number(btn.dataset.exe));
+    if (chosen) { await loadGames(); toast("已指定主程序", "ok"); }
+  }));
   list.querySelectorAll("[data-launch]").forEach((btn) => btn.addEventListener("click", async () => {
     const err = await app().LaunchGame(Number(btn.dataset.launch));
     if (err) toast("启动失败：" + err, "bad");

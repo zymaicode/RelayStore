@@ -3,10 +3,14 @@ package main
 import (
 	"os"
 	"os/exec"
+	"encoding/json"
 	"path/filepath"
 	"sort"
 	"strconv"
 	"strings"
+	"time"
+
+	"github.com/wailsapp/wails/v2/pkg/runtime"
 )
 
 // GameInspection is the pre-launch report for one installed game.
@@ -78,8 +82,21 @@ func containsBytes(path string, needle []byte, limit int64) bool {
 // InspectGame scans the install folder and reports what it will take to launch.
 func (a *App) InspectGame(appid int) GameInspection {
 	path := a.InstallPathFor(appid)
+	key := strconv.Itoa(appid)
+	useCache := a.settings.DataDir != ""
+	if cached, ok := a.loadCache()[key]; useCache && ok && time.Since(time.Unix(cached.CheckedAt, 0)) < inspectionTTL {
+		return GameInspection{
+			AppID:     appid,
+			Path:      path,
+			Exe:       cached.Exe,
+			SizeBytes: cached.Bytes,
+			Files:     cached.Files,
+			Flags:     cached.Flags,
+			Verdict:   cached.Verdict,
+			Detail:    cached.Detail,
+		}
+	}
 	report := GameInspection{AppID: appid, Path: path, Flags: []string{}}
-
 	info, err := os.Stat(path)
 	if err != nil || !info.IsDir() {
 		report.Verdict = "missing"
@@ -118,7 +135,12 @@ func (a *App) InspectGame(appid int) GameInspection {
 	if len(exes) > 0 {
 		report.Exe = exes[0].path
 	}
-
+	if override := a.loadOverrides()[strconv.Itoa(appid)]; override != "" {
+		if info, err := os.Stat(override); err == nil && !info.IsDir() {
+			report.Exe = override
+			report.Flags = append(report.Flags, "exe_pinned")
+		}
+	}
 	for _, dll := range dlls {
 		lower := strings.ToLower(filepath.Base(dll.path))
 		switch {
@@ -172,6 +194,21 @@ func (a *App) InspectGame(appid int) GameInspection {
 		report.Verdict = "ready"
 		report.Detail = "不依赖 Steam 授权，可直接启动"
 	}
+
+	if !useCache {
+		return report
+	}
+	cache := a.loadCache()
+	cache[strconv.Itoa(appid)] = inspectionCacheEntry{
+		Verdict:   report.Verdict,
+		Detail:    report.Detail,
+		Exe:       report.Exe,
+		Flags:     report.Flags,
+		Bytes:     report.SizeBytes,
+		Files:     report.Files,
+		CheckedAt: time.Now().Unix(),
+	}
+	a.saveCache(cache)
 	return report
 }
 
@@ -189,4 +226,94 @@ func (a *App) LaunchGame(appid int) string {
 	}
 	go func() { _ = cmd.Wait() }()
 	return ""
+}
+// ---- executable overrides + inspection cache (both live in the data dir) ----
+
+type exeOverrides map[string]string
+
+type inspectionCacheEntry struct {
+	Verdict   string   `json:"verdict"`
+	Detail    string   `json:"detail"`
+	Exe       string   `json:"exe"`
+	Flags     []string `json:"flags"`
+	Bytes     int64    `json:"bytes"`
+	Files     int      `json:"files"`
+	CheckedAt int64    `json:"checkedAt"`
+}
+
+const inspectionTTL = 30 * time.Minute
+
+func (a *App) overridePath() string {
+	return filepath.Join(a.settings.DataDir, "exe-overrides.json")
+}
+
+func (a *App) cachePath() string {
+	return filepath.Join(a.settings.DataDir, "inspect-cache.json")
+}
+
+func (a *App) loadOverrides() exeOverrides {
+	out := exeOverrides{}
+	if data, err := os.ReadFile(a.overridePath()); err == nil {
+		_ = json.Unmarshal(data, &out)
+	}
+	return out
+}
+
+func (a *App) loadCache() map[string]inspectionCacheEntry {
+	out := map[string]inspectionCacheEntry{}
+	if data, err := os.ReadFile(a.cachePath()); err == nil {
+		_ = json.Unmarshal(data, &out)
+	}
+	return out
+}
+
+func (a *App) saveCache(cache map[string]inspectionCacheEntry) {
+	if err := os.MkdirAll(filepath.Dir(a.cachePath()), 0o755); err != nil {
+		return
+	}
+	if data, err := json.Marshal(cache); err == nil {
+		_ = os.WriteFile(a.cachePath(), data, 0o644)
+	}
+}
+
+// SetGameExe pins a specific executable for a game and drops its cache entry.
+func (a *App) SetGameExe(appid int, exe string) string {
+	overrides := a.loadOverrides()
+	key := strconv.Itoa(appid)
+	if exe == "" {
+		delete(overrides, key)
+	} else {
+		overrides[key] = exe
+	}
+	if err := os.MkdirAll(filepath.Dir(a.overridePath()), 0o755); err == nil {
+		if data, err := json.Marshal(overrides); err == nil {
+			_ = os.WriteFile(a.overridePath(), data, 0o644)
+		}
+	}
+	cache := a.loadCache()
+	delete(cache, key)
+	a.saveCache(cache)
+	return exe
+}
+
+// PickGameExe opens a file dialog inside the install folder.
+func (a *App) PickGameExe(appid int) string {
+	dir := a.InstallPathFor(appid)
+	choice, err := runtime.OpenFileDialog(a.ctx, runtime.OpenDialogOptions{
+		Title:            "选择游戏主程序",
+		DefaultDirectory: dir,
+		Filters:          []runtime.FileFilter{{DisplayName: "可执行文件 (*.exe)", Pattern: "*.exe"}},
+	})
+	if err != nil || choice == "" {
+		return ""
+	}
+	return a.SetGameExe(appid, choice)
+}
+
+// RefreshInspection clears the cached verdict for one app.
+func (a *App) RefreshInspection(appid int) string {
+	cache := a.loadCache()
+	delete(cache, strconv.Itoa(appid))
+	a.saveCache(cache)
+	return "ok"
 }

@@ -57,7 +57,7 @@ func TestInspectGameVerdicts(t *testing.T) {
 			for name, content := range tc.files {
 				writeFile(t, filepath.Join(install, name), content)
 			}
-			app := &App{settings: Settings{GameDir: gameDir}}
+			app := &App{settings: Settings{GameDir: gameDir, DataDir: t.TempDir()}}
 			report := app.InspectGame(480)
 			if report.Verdict != tc.expected {
 				t.Fatalf("verdict = %q, want %q (flags=%v detail=%q)", report.Verdict, tc.expected, report.Flags, report.Detail)
