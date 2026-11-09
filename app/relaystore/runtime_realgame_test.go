@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -19,9 +20,18 @@ func TestRuntimeRealGame(t *testing.T) {
 	if err != nil {
 		t.Fatalf("bad appid: %v", err)
 	}
+	dataDir := filepath.Join(os.Getenv("TEMP"), "relaystore-runtime-data")
+	if name := os.Getenv("RELAYSTORE_RUNTIME_GAME_NAME"); name != "" {
+		if err := os.MkdirAll(dataDir, 0o755); err == nil {
+			meta := map[string]GameMeta{rawID: {Name: name, TS: 1}}
+			if data, marshalErr := json.Marshal(meta); marshalErr == nil {
+				_ = os.WriteFile(filepath.Join(dataDir, "meta.json"), data, 0o644)
+			}
+		}
+	}
 	app := &App{settings: Settings{
 		GameDir: parent,
-		DataDir: filepath.Join(os.Getenv("TEMP"), "relaystore-runtime-data"),
+		DataDir: dataDir,
 	}}
 	action := os.Getenv("RELAYSTORE_RUNTIME_ACTION")
 	switch action {

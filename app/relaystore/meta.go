@@ -20,13 +20,13 @@ type GameMeta struct {
 	TS    int64  `json:"ts"`
 }
 
-func metaCachePath() string {
-	return filepath.Join(loadSettings().DataDir, "meta.json")
+func (a *App) metaCachePath() string {
+	return filepath.Join(a.settings.DataDir, "meta.json")
 }
 
-func loadMetaCache() map[string]GameMeta {
+func (a *App) loadMetaCache() map[string]GameMeta {
 	out := map[string]GameMeta{}
-	data, err := os.ReadFile(metaCachePath())
+	data, err := os.ReadFile(a.metaCachePath())
 	if err != nil {
 		return out
 	}
@@ -34,8 +34,8 @@ func loadMetaCache() map[string]GameMeta {
 	return out
 }
 
-func saveMetaCache(cache map[string]GameMeta) {
-	path := metaCachePath()
+func (a *App) saveMetaCache(cache map[string]GameMeta) {
+	path := a.metaCachePath()
 	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
 		return
 	}
@@ -108,7 +108,7 @@ func (a *App) fetchMeta(appid int) (GameMeta, bool) {
 
 // GameMetas returns cached (or freshly fetched) identity data for the given appids.
 func (a *App) GameMetas(appids []int) map[int]GameMeta {
-	cache := loadMetaCache()
+	cache := a.loadMetaCache()
 	out := map[int]GameMeta{}
 	var mu sync.Mutex
 	var wg sync.WaitGroup
@@ -135,7 +135,7 @@ func (a *App) GameMetas(appids []int) map[int]GameMeta {
 	}
 	wg.Wait()
 	if changed {
-		saveMetaCache(cache)
+		a.saveMetaCache(cache)
 	}
 	return out
 }

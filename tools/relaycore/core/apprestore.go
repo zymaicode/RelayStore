@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"path/filepath"
 	"strconv"
 	"sync"
 	"time"
@@ -123,6 +124,8 @@ func RestoreApp(appid int, outDir string, keys map[int]string, idx *Index, cache
 			return row
 		}
 		row.Status = "ok"
+		// the chunk cache only exists for resume; drop it once the depot is complete
+		_ = os.RemoveAll(filepath.Join(outDir, ".chunks"))
 		return row
 	}
 

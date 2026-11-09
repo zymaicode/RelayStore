@@ -104,7 +104,7 @@ func SafeFolderName(name string) string {
 // InstallPathFor builds <gameDir>\<game name> (falls back to the appid).
 func (a *App) InstallPathFor(appid int) string {
 	name := ""
-	if meta, ok := loadMetaCache()[strconv.Itoa(appid)]; ok {
+	if meta, ok := a.loadMetaCache()[strconv.Itoa(appid)]; ok {
 		name = meta.Name
 	}
 	if name == "" {

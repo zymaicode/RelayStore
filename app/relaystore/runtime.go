@@ -23,7 +23,8 @@ const emulatorLicenseNote = "运行时层使用 gse_fork（LGPL-3.0），按需�
 type RuntimeStatus struct {
 	AppID     int    `json:"appid"`
 	Installed bool   `json:"installed"`
-	DLL       string `json:"dll"`
+	DLL       string   `json:"dll"`
+	Targets   []string `json:"targets"`
 	Backup    bool   `json:"backup"`
 	Arch      string `json:"arch"`
 	Note      string `json:"note"`
@@ -53,12 +54,46 @@ func peArch(path string) string {
 	return ""
 }
 
+// findSteamDLLs returns every steam_api dll inside a game folder (Unity keeps them under Data/Plugins).
+func findSteamDLLs(gameDir string) []string {
+	var out []string
+	_ = filepath.Walk(gameDir, func(p string, info os.FileInfo, err error) error {
+		if err != nil || info == nil || info.IsDir() {
+			return nil
+		}
+		lower := strings.ToLower(info.Name())
+		if lower == "steam_api.dll" || lower == "steam_api64.dll" {
+			out = append(out, p)
+		}
+		return nil
+	})
+	return out
+}
+
 func (a *App) gameDLL(appid int, arch string) string {
 	dir := a.InstallPathFor(appid)
-	if arch == "x32" {
-		return filepath.Join(dir, "steam_api.dll")
+	found := findSteamDLLs(dir)
+	// prefer a dll whose bitness matches the executable
+	for _, dll := range found {
+		if peArchOfDLL(dll) == arch {
+			return dll
+		}
 	}
-	return filepath.Join(dir, "steam_api64.dll")
+	if len(found) > 0 {
+		return found[0]
+	}
+	if arch == "x64" {
+		return filepath.Join(dir, "steam_api64.dll")
+	}
+	return filepath.Join(dir, "steam_api.dll")
+}
+
+func peArchOfDLL(path string) string {
+	lower := strings.ToLower(filepath.Base(path))
+	if strings.Contains(lower, "64") {
+		return "x64"
+	}
+	return "x32"
 }
 
 // RuntimeStatus reports the emulator state for one game.
@@ -69,14 +104,21 @@ func (a *App) RuntimeStatus(appid int) RuntimeStatus {
 		arch = "x32"
 	}
 	status := RuntimeStatus{AppID: appid, Arch: arch, Note: emulatorLicenseNote}
-	dll := a.gameDLL(appid, arch)
-	status.DLL = dll
-	if info, err := os.Stat(dll); err == nil {
-		status.Installed = info.Size() > 1<<20
+	dir := a.InstallPathFor(appid)
+	targets := findSteamDLLs(dir)
+	if len(targets) == 0 {
+		targets = []string{a.gameDLL(appid, arch)}
 	}
-	if _, err := os.Stat(dll + ".orig"); err == nil {
-		status.Backup = true
+	status.DLL = targets[0]
+	for _, target := range targets {
+		if info, err := os.Stat(target); err == nil && info.Size() > 1<<20 {
+			status.Installed = true
+		}
+		if _, err := os.Stat(target + ".orig"); err == nil {
+			status.Backup = true
+		}
 	}
+	status.Targets = targets
 	return status
 }
 
@@ -139,63 +181,80 @@ func (a *App) InstallRuntime(appid int) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	source := filepath.Join(dir, "experimental", status.Arch, "steam_api.dll")
-	if status.Arch == "x64" {
-		source = filepath.Join(dir, "experimental", "x64", "steam_api64.dll")
-	}
-	if _, err := os.Stat(source); err != nil {
-		return "", fmt.Errorf("运行时层缺少 %s 版本：%v", status.Arch, err)
-	}
-	target := a.gameDLL(appid, status.Arch)
-	if _, err := os.Stat(target); err == nil {
-		if _, err := os.Stat(target + ".orig"); err != nil {
-			if err := os.Rename(target, target+".orig"); err != nil {
-				return "", fmt.Errorf("备份原 DLL 失败：%v", err)
-			}
+	replaced := 0
+	for _, target := range status.Targets {
+		arch := status.Arch
+		if info, statErr := os.Stat(target); statErr == nil {
+			_ = info
 		}
-	}
-	in, err := os.Open(source)
-	if err != nil {
-		return "", err
-	}
-	defer in.Close()
-	out, err := os.Create(target)
-	if err != nil {
-		return "", err
-	}
-	if _, err := io.Copy(out, in); err != nil {
+		arch = peArchOfDLL(target)
+		source := filepath.Join(dir, "experimental", arch, "steam_api.dll")
+		if arch == "x64" {
+			source = filepath.Join(dir, "experimental", "x64", "steam_api64.dll")
+		}
+		if _, err := os.Stat(source); err != nil {
+			continue
+		}
+		if _, err := os.Stat(target); err == nil {
+			if _, err := os.Stat(target + ".orig"); err != nil {
+				if err := os.Rename(target, target+".orig"); err != nil {
+					return "", fmt.Errorf("备份原 DLL 失败：%v", err)
+				}
+			}
+		} else if err := os.MkdirAll(filepath.Dir(target), 0o755); err != nil {
+			return "", err
+		}
+		in, err := os.Open(source)
+		if err != nil {
+			return "", err
+		}
+		out, err := os.Create(target)
+		if err != nil {
+			in.Close()
+			return "", err
+		}
+		if _, err := io.Copy(out, in); err != nil {
+			out.Close()
+			in.Close()
+			return "", err
+		}
 		out.Close()
-		return "", err
+		in.Close()
+		replaced++
 	}
-	out.Close()
-
+	if replaced == 0 {
+		return "", fmt.Errorf("没有找到可替换的 steam_api 组件")
+	}
 	gameDir := a.InstallPathFor(appid)
 	_ = os.WriteFile(filepath.Join(gameDir, "steam_appid.txt"), []byte(strconv.Itoa(appid)), 0o644)
 	settingsDir := filepath.Join(gameDir, "steam_settings")
 	_ = os.MkdirAll(settingsDir, 0o755)
 	_ = os.WriteFile(filepath.Join(settingsDir, "configs.appid"), []byte(strconv.Itoa(appid)), 0o644)
-
 	a.RefreshInspection(appid)
-	return fmt.Sprintf("已为 AppID %d 启用运行时层（%s）", appid, status.Arch), nil
+	return fmt.Sprintf("已为 AppID %d 启用运行时层（%s，替换 %d 个组件）", appid, status.Arch, replaced), nil
 }
 
 // RemoveRuntime restores the original DLL (or deletes the emulator copy).
 func (a *App) RemoveRuntime(appid int) (string, error) {
 	status := a.RuntimeStatus(appid)
-	target := a.gameDLL(appid, status.Arch)
-	if _, err := os.Stat(target + ".orig"); err == nil {
-		_ = os.Remove(target)
-		if err := os.Rename(target+".orig", target); err != nil {
-			return "", fmt.Errorf("恢复原 DLL 失败：%v", err)
+	restored := 0
+	for _, target := range status.Targets {
+		if _, err := os.Stat(target + ".orig"); err == nil {
+			_ = os.Remove(target)
+			if err := os.Rename(target+".orig", target); err != nil {
+				return "", fmt.Errorf("恢复原 DLL 失败：%v", err)
+			}
+			restored++
 		}
-	} else if err := os.Remove(target); err != nil && !os.IsNotExist(err) {
-		return "", err
 	}
 	gameDir := a.InstallPathFor(appid)
 	_ = os.Remove(filepath.Join(gameDir, "steam_appid.txt"))
 	_ = os.RemoveAll(filepath.Join(gameDir, "steam_settings"))
 	a.RefreshInspection(appid)
-	return "已移除运行时层", nil
+	if restored == 0 {
+		return "没有找到可还原的运行时层", nil
+	}
+	return fmt.Sprintf("已移除运行时层，还原 %d 个组件", restored), nil
 }
 
 // RuntimeInfo exposes the layer state to the UI.
