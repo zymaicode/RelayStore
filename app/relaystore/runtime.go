@@ -135,6 +135,28 @@ func (a *App) RuntimeStatus(appid int) RuntimeStatus {
 	return status
 }
 
+// linkOrCopy prefers a hard link (no extra disk) and falls back to copying across volumes.
+func linkOrCopy(source, target string) (linked bool, err error) {
+	_ = os.Remove(target)
+	if linkErr := os.Link(source, target); linkErr == nil {
+		return true, nil
+	}
+	in, err := os.Open(source)
+	if err != nil {
+		return false, err
+	}
+	defer in.Close()
+	out, err := os.Create(target)
+	if err != nil {
+		return false, err
+	}
+	if _, err := io.Copy(out, in); err != nil {
+		out.Close()
+		return false, err
+	}
+	return false, out.Close()
+}
+
 // ensureEmulatorArchive downloads and extracts the emulator package once.
 func (a *App) ensureEmulatorArchive() (string, error) {
 	dir := a.runtimeDir()
@@ -301,28 +323,24 @@ func (a *App) InstallRuntimeLoader(appid int) (string, error) {
 		return "", fmt.Errorf("运行时层缺少 steamclient_experimental 目录")
 	}
 	gameDir := a.InstallPathFor(appid)
-	files := []string{"steamclient.dll", "steamclient64.dll", "GameOverlayRenderer.dll", "GameOverlayRenderer64.dll", "steamclient_loader_x32.exe", "steamclient_loader_x64.exe"}
+	loaderName := "steamclient_loader_x32.exe"
+	if arch == "x64" {
+		loaderName = "steamclient_loader_x64.exe"
+	}
+	files := []string{"steamclient.dll", "steamclient64.dll", loaderName}
+		linked := 0
 	for _, name := range files {
 		source := filepath.Join(clientDir, name)
 		if _, err := os.Stat(source); err != nil {
 			continue
 		}
-		in, err := os.Open(source)
+		ok, err := linkOrCopy(source, filepath.Join(gameDir, name))
 		if err != nil {
 			return "", err
 		}
-		out, err := os.Create(filepath.Join(gameDir, name))
-		if err != nil {
-			in.Close()
-			return "", err
+		if ok {
+			linked++
 		}
-		if _, err := io.Copy(out, in); err != nil {
-			out.Close()
-			in.Close()
-			return "", err
-		}
-		out.Close()
-		in.Close()
 	}
 	exeName := filepath.Base(report.Exe)
 	ini := fmt.Sprintf("[SteamClient]\nExe=%s\nExeRunDir=\nExeCommandLine=\nAppId=%d\nSteamClientDll=steamclient.dll\nSteamClient64Dll=steamclient64.dll\n", exeName, appid)
@@ -333,11 +351,7 @@ func (a *App) InstallRuntimeLoader(appid int) (string, error) {
 	_ = os.MkdirAll(filepath.Join(gameDir, "steam_settings"), 0o755)
 	_ = os.WriteFile(filepath.Join(gameDir, "steam_settings", "configs.appid"), []byte(strconv.Itoa(appid)), 0o644)
 	a.RefreshInspection(appid)
-	loaderName := "steamclient_loader_x32.exe"
-	if arch == "x64" {
-		loaderName = "steamclient_loader_x64.exe"
-	}
-	return fmt.Sprintf("已启用运行时层（loader/%s，%s）", arch, loaderName), nil
+	return fmt.Sprintf("已启用运行时层（loader/%s，%d 个文件以硬链接方式共享）", arch, linked), nil
 }
 
 // RemoveRuntimeLoader deletes the loader files installed by InstallRuntimeLoader.

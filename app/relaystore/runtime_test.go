@@ -57,3 +57,43 @@ func TestRuntimeLayerInstallAndRemove(t *testing.T) {
 		t.Fatalf("steam_settings not cleaned: %v", err)
 	}
 }
+func TestLoaderInstallSharesFiles(t *testing.T) {
+	root := t.TempDir()
+	gameDir := filepath.Join(root, "games")
+	dataDir := filepath.Join(root, "data")
+	install := filepath.Join(gameDir, "Undertale")
+	writeFile(t, filepath.Join(install, "UNDERTALE.exe"), "MZ")
+
+	clientDir := filepath.Join(dataDir, "runtime", "steamclient_experimental")
+	if err := os.MkdirAll(clientDir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	big := strings.Repeat("S", 3<<20)
+	for _, name := range []string{"steamclient.dll", "steamclient64.dll", "steamclient_loader_x32.exe"} {
+		if err := os.WriteFile(filepath.Join(clientDir, name), []byte(big), 0o644); err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	app := &App{settings: Settings{GameDir: gameDir, DataDir: dataDir}}
+	if _, err := app.InstallRuntimeLoader(391540); err != nil {
+		t.Fatalf("install loader: %v", err)
+	}
+
+	source := filepath.Join(clientDir, "steamclient.dll")
+	target := filepath.Join(install, "steamclient.dll")
+	sourceInfo, err := os.Stat(source)
+	if err != nil {
+		t.Fatal(err)
+	}
+	targetInfo, err := os.Stat(target)
+	if err != nil {
+		t.Fatalf("steamclient.dll not installed: %v", err)
+	}
+	if !os.SameFile(sourceInfo, targetInfo) {
+		t.Fatalf("expected a hard link (same file), got a separate copy")
+	}
+	if _, err := os.Stat(filepath.Join(install, "GameOverlayRenderer.dll")); !os.IsNotExist(err) {
+		t.Fatalf("overlay renderer should not be installed anymore: %v", err)
+	}
+}

@@ -21,7 +21,10 @@ func TestRuntimeRealGame(t *testing.T) {
 	if err != nil {
 		t.Fatalf("bad appid: %v", err)
 	}
-	dataDir := filepath.Join(os.Getenv("TEMP"), "relaystore-runtime-data")
+	dataDir := os.Getenv("RELAYSTORE_RUNTIME_DATA")
+	if dataDir == "" {
+		dataDir = filepath.Join(os.Getenv("TEMP"), "relaystore-runtime-data")
+	}
 	if name := os.Getenv("RELAYSTORE_RUNTIME_GAME_NAME"); name != "" {
 		if err := os.MkdirAll(dataDir, 0o755); err == nil {
 			meta := map[string]GameMeta{rawID: {Name: name, TS: 1}}
