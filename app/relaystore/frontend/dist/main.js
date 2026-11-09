@@ -214,6 +214,7 @@ async function loadGames() {
       ' <span class="verdict ' + check.verdict + '" title="' + (check.detail || "") + '">' + (VERDICT_TEXT[check.verdict] || check.verdict) + "</span></div>" +
       '<div class="path" title="' + g.path + '">AppID ' + g.appid + ' · ' + g.path + '</div>' +
       (check.detail ? '<div class="path">' + check.detail + "</div>" : "") +
+      (check.lastExit && check.lastExit !== 0 ? '<div class="path bad">上次启动崩溃：退出码 ' + check.lastExit + '（0x' + (check.lastExit < 0 ? (check.lastExit >>> 0).toString(16).toUpperCase() : check.lastExit.toString(16).toUpperCase()) + '）</div>' : "") +
       "</div>" +
       '<div class="size">' + fmtBytes(g.bytes) + ' · ' + g.files + ' 个文件</div>' +
       (canLaunch ? '<button data-launch="' + g.appid + '">启动</button>' : "") +

@@ -23,6 +23,8 @@ type GameInspection struct {
 	Flags     []string `json:"flags"`
 	Verdict   string   `json:"verdict"`
 	Detail    string   `json:"detail"`
+	LastExit  int      `json:"lastExit"`
+	LastExitAt int64   `json:"lastExitAt"`
 }
 
 var junkExe = []string{
@@ -195,6 +197,10 @@ func (a *App) InspectGame(appid int) GameInspection {
 		report.Detail = "不依赖 Steam 授权，可直接启动"
 	}
 
+	if result, ok := a.lastLaunchResult(appid); ok {
+		report.LastExit = result.ExitCode
+		report.LastExitAt = result.At
+	}
 	if !useCache {
 		return report
 	}
@@ -224,7 +230,19 @@ func (a *App) LaunchGame(appid int) string {
 	if err := cmd.Start(); err != nil {
 		return err.Error()
 	}
-	go func() { _ = cmd.Wait() }()
+	go func() {
+		err := cmd.Wait()
+		code := 0
+		if err != nil {
+			if exitErr, ok := err.(*exec.ExitError); ok {
+				code = exitErr.ExitCode()
+			} else {
+				code = -1
+			}
+		}
+		a.recordLaunchResult(appid, code)
+		a.RefreshInspection(appid)
+	}()
 	return ""
 }
 // ---- executable overrides + inspection cache (both live in the data dir) ----
@@ -316,4 +334,42 @@ func (a *App) RefreshInspection(appid int) string {
 	delete(cache, strconv.Itoa(appid))
 	a.saveCache(cache)
 	return "ok"
+}
+// ---- launch results (so a crash is remembered and shown next time) ----
+
+type launchResult struct {
+	ExitCode int   `json:"exitCode"`
+	At       int64 `json:"at"`
+}
+
+func (a *App) launchResultsPath() string {
+	return filepath.Join(a.settings.DataDir, "launch-results.json")
+}
+
+func (a *App) recordLaunchResult(appid int, code int) {
+	if a.settings.DataDir == "" {
+		return
+	}
+	all := map[string]launchResult{}
+	if data, err := os.ReadFile(a.launchResultsPath()); err == nil {
+		_ = json.Unmarshal(data, &all)
+	}
+	all[strconv.Itoa(appid)] = launchResult{ExitCode: code, At: time.Now().Unix()}
+	if err := os.MkdirAll(filepath.Dir(a.launchResultsPath()), 0o755); err == nil {
+		if data, err := json.Marshal(all); err == nil {
+			_ = os.WriteFile(a.launchResultsPath(), data, 0o644)
+		}
+	}
+}
+
+func (a *App) lastLaunchResult(appid int) (launchResult, bool) {
+	if a.settings.DataDir == "" {
+		return launchResult{}, false
+	}
+	all := map[string]launchResult{}
+	if data, err := os.ReadFile(a.launchResultsPath()); err == nil {
+		_ = json.Unmarshal(data, &all)
+	}
+	result, ok := all[strconv.Itoa(appid)]
+	return result, ok
 }
