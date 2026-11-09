@@ -196,6 +196,16 @@
   .game .title { font-family: var(--font-ui); font-weight:700; font-size:13.5px; }
   .game .path { color: var(--muted); font-size:11.5px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
   .game .size { color: var(--muted); font-size:12px; white-space:nowrap; font-family: var(--font-mono); }
+  .verdict { font-size:10.5px; font-weight:700; padding:2px 7px; border: var(--bw) solid var(--card-bd);
+             border-radius: var(--r-pill); white-space:nowrap; }
+  .verdict.ready { background: var(--accent); color: var(--accent-fg); }
+  .verdict.needs_steam { background: #fde68a; color: #713f12; }
+  .verdict.drm_locked { background: #fecaca; color: #7f1d1d; }
+  .verdict.anticheat { background: #fed7aa; color: #7c2d12; }
+  .verdict.no_exe, .verdict.missing { background: var(--surface-soft); color: var(--muted); }
+  html[data-theme="dark"] .verdict.needs_steam { background: #78350f; color: #fde68a; }
+  html[data-theme="dark"] .verdict.drm_locked { background: #7f1d1d; color: #fecaca; }
+  html[data-theme="dark"] .verdict.anticheat { background: #7c2d12; color: #fed7aa; }
   .empty { padding:26px 12px; text-align:center; color: var(--muted);
            border: var(--bw) dashed var(--card-bd); border-radius: var(--r-md); }
 

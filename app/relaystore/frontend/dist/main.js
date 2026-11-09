@@ -181,6 +181,15 @@ async function refreshData() {
   return data;
 }
 
+const VERDICT_TEXT = {
+  ready: "可启动",
+  needs_steam: "需 Steam 授权",
+  drm_locked: "DRM 锁定",
+  anticheat: "含反作弊",
+  no_exe: "无可执行文件",
+  missing: "未安装",
+};
+
 async function loadGames() {
   const games = await app().InstalledGames();
   const list = $("gameList");
@@ -190,22 +199,33 @@ async function loadGames() {
   }
   let metas = {};
   try { metas = await app().GameMetas(games.map((g) => g.appid)); } catch (e) { metas = {}; }
-  list.innerHTML = games.map((g) => {
+  const checks = await Promise.all(games.map(async (g) => {
+    try { return await app().InspectGame(g.appid); } catch (e) { return null; }
+  }));
+  list.innerHTML = games.map((g, i) => {
     const meta = metas[g.appid] || metas[String(g.appid)] || {};
+    const check = checks[i] || { verdict: "missing", detail: "无法预检" };
     const title = meta.name || ("AppID " + g.appid);
     const initial = (meta.name || String(g.appid)).trim().slice(0, 1).toUpperCase();
-    const cover = meta.image
-      ? '<div class="cover" style="background-image:url(\'' + meta.image + '\');background-size:cover;background-position:center"></div>'
-      : '<div class="cover">' + initial + '</div>';
+    const canLaunch = check.verdict === "ready" || check.verdict === "anticheat";
     return '<div class="game">' +
-      cover +
-      '<div class="meta"><div class="title">' + title + '</div>' +
-      '<div class="path" title="' + g.path + '">AppID ' + g.appid + ' · ' + g.path + '</div></div>' +
+      '<div class="cover">' + initial + '</div>' +
+      '<div class="meta"><div class="title">' + title +
+      ' <span class="verdict ' + check.verdict + '" title="' + (check.detail || "") + '">' + (VERDICT_TEXT[check.verdict] || check.verdict) + "</span></div>" +
+      '<div class="path" title="' + g.path + '">AppID ' + g.appid + ' · ' + g.path + '</div>' +
+      (check.detail ? '<div class="path">' + check.detail + "</div>" : "") +
+      "</div>" +
       '<div class="size">' + fmtBytes(g.bytes) + ' · ' + g.files + ' 个文件</div>' +
+      (canLaunch ? '<button data-launch="' + g.appid + '">启动</button>' : "") +
       '<button class="ghost" data-open="' + g.path.replace(/"/g, "&quot;") + '">打开目录</button>' +
       '</div>';
   }).join("");
   list.querySelectorAll("[data-open]").forEach((btn) => btn.addEventListener("click", () => app().OpenPath(btn.dataset.open)));
+  list.querySelectorAll("[data-launch]").forEach((btn) => btn.addEventListener("click", async () => {
+    const err = await app().LaunchGame(Number(btn.dataset.launch));
+    if (err) toast("启动失败：" + err, "bad");
+    else toast("已启动 AppID " + btn.dataset.launch, "ok");
+  }));
 }
 async function loadSettings() {
   const s = await app().GetSettings();
