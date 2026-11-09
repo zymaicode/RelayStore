@@ -372,3 +372,28 @@ func (a *App) RemoveRuntimeLoader(appid int) (string, error) {
 	}
 	return fmt.Sprintf("已移除运行时层（%d 个文件）", removed), nil
 }
+// RuntimeCacheInfo reports the shared emulator cache footprint.
+func (a *App) RuntimeCacheInfo() map[string]any {
+	dir := a.runtimeDir()
+	var total int64
+	files := 0
+	_ = filepath.Walk(dir, func(p string, info os.FileInfo, err error) error {
+		if err != nil || info == nil || info.IsDir() {
+			return nil
+		}
+		total += info.Size()
+		files++
+		return nil
+	})
+	return map[string]any{"path": dir, "bytes": total, "files": files}
+}
+
+// ClearRuntimeCache removes the shared cache; hard links in game folders survive.
+func (a *App) ClearRuntimeCache() (string, error) {
+	info := a.RuntimeCacheInfo()
+	dir, _ := info["path"].(string)
+	if err := os.RemoveAll(dir); err != nil {
+		return "", err
+	}
+	return fmt.Sprintf("已清理运行时缓存（释放 %.1f MB）；已启用运行时层的游戏不受影响", float64(info["bytes"].(int64))/(1<<20)), nil
+}

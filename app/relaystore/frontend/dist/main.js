@@ -219,6 +219,7 @@ async function loadGames() {
       ' <span class="verdict ' + check.verdict + '" title="' + (check.detail || "") + '">' + (VERDICT_TEXT[check.verdict] || check.verdict) + "</span></div>" +
       '<div class="path" title="' + g.path + '">AppID ' + g.appid + ' · ' + g.path + '</div>' +
       (check.detail ? '<div class="path">' + check.detail + "</div>" : "") +
+      (runtime.mode ? '<div class="path"><span class="chip" style="font-size:10.5px">运行时：' + (runtime.mode === "loader" ? "loader" : "shim") + '</span></div>' : "") +
       (check.lastExit && check.lastExit !== 0 ? '<div class="path bad">上次启动崩溃：退出码 ' + check.lastExit + '（0x' + (check.lastExit < 0 ? (check.lastExit >>> 0).toString(16).toUpperCase() : check.lastExit.toString(16).toUpperCase()) + '）</div>' : "") +
       "</div>" +
       '<div class="size">' + fmtBytes(g.bytes) + ' · ' + g.files + ' 个文件</div>' +
@@ -259,6 +260,15 @@ async function loadGames() {
     else toast("已启动 AppID " + btn.dataset.launch, "ok");
   }));
 }
+async function loadRuntimeCache() {
+  try {
+    const info = await app().RuntimeCacheInfo();
+    const mb = (info.bytes / 1048576).toFixed(1);
+    $("runtimeCacheInfo").textContent = info.files ? ("已缓存 " + mb + " MB · " + info.files + " 个文件") : "尚未下载（首次启用运行时层时自动获取）";
+    $("runtimeCacheInfo").title = info.path || "";
+  } catch (err) { $("runtimeCacheInfo").textContent = "读取失败：" + err; }
+}
+
 async function loadSettings() {
   const s = await app().GetSettings();
   $("dataDir").value = s.dataDir;
@@ -266,6 +276,7 @@ async function loadSettings() {
   $("cfgDepot").value = s.depotWorkers;
   $("cfgChunk").value = s.chunkWorkers;
   $("depotWorkers").value = s.depotWorkers;
+  await loadRuntimeCache();
 }
 
 async function syncTarget() {
@@ -379,6 +390,12 @@ $("start").addEventListener("click", start);
 $("saveSettings").addEventListener("click", saveSettings);
 $("checkUpdate").addEventListener("click", checkUpdate);
 $("doUpdate").addEventListener("click", doUpdate);
+$("clearRuntimeCache").addEventListener("click", async () => {
+  $("clearRuntimeCache").disabled = true;
+  try { const msg = await app().ClearRuntimeCache(); toast(msg, "ok"); await loadRuntimeCache(); }
+  catch (err) { toast("清理失败：" + err, "bad"); }
+  $("clearRuntimeCache").disabled = false;
+});
 $("refreshGames").addEventListener("click", async () => { await loadGames(); toast("已刷新"); });
 $("updateBadge").addEventListener("click", () => { showPage("settings"); checkUpdate(); });
 $("appid").addEventListener("change", async () => { $("libAppid").value = $("appid").value; await syncTarget(); check(); });
