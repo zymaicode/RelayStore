@@ -5,6 +5,7 @@ import (
 	"io"
 	"net/http"
 	"strings"
+	"sync"
 	"time"
 )
 
@@ -47,27 +48,49 @@ func (m *Mirror) get(url string) ([]byte, int, error) {
 	return body, response.StatusCode, nil
 }
 
-// HeadStatus reports the first template status for a repo (used by coverage).
+// headCache memoises depot+gid -> status for the process lifetime.
+var headCache = struct {
+	sync.Mutex
+	m map[string]int
+}{m: map[string]int{}}
+
+// HeadStatus probes every repo and URL template until one answers 200.
 func (m *Mirror) HeadStatus(depot int, gid string) int {
-	name := fmt.Sprintf("%d_%s.manifest", depot, gid)
+	key := fmt.Sprintf("%d_%s", depot, gid)
+	headCache.Lock()
+	if cached, ok := headCache.m[key]; ok {
+		headCache.Unlock()
+		return cached
+	}
+	headCache.Unlock()
+
+	name := key + ".manifest"
+	result := 404
 	for _, repo := range m.Repos {
-		request, err := http.NewRequest(http.MethodHead, m.url(repo, name), nil)
-		if err != nil {
-			continue
-		}
-		response, err := m.Client.Do(request)
-		if err != nil {
-			continue
-		}
-		response.Body.Close()
-		if response.StatusCode == 200 {
-			return 200
-		}
-		if response.StatusCode != 404 {
-			return response.StatusCode
+		for _, template := range mirrorTemplates {
+			url := fmt.Sprintf(template, repo, name)
+			request, err := http.NewRequest(http.MethodHead, url, nil)
+			if err != nil {
+				continue
+			}
+			response, err := m.Client.Do(request)
+			if err != nil {
+				continue
+			}
+			response.Body.Close()
+			if response.StatusCode == 200 {
+				result = 200
+				headCache.Lock()
+				headCache.m[key] = result
+				headCache.Unlock()
+				return result
+			}
 		}
 	}
-	return 404
+	headCache.Lock()
+	headCache.m[key] = result
+	headCache.Unlock()
+	return result
 }
 
 // Fetch downloads a manifest, trying index-known repos first and then the gid fallbacks.

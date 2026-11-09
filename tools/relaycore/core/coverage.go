@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"sync"
 )
 
 type DepotCoverage struct {
@@ -36,20 +37,33 @@ func CheckCoverage(appid int, keys map[int]string, idx *Index, cacheDir string, 
 		mirror = NewMirror()
 	}
 	report := &CoverageReport{AppID: appid}
-	for _, info := range depots {
-		row := DepotCoverage{DepotID: info.DepotID, GID: info.GID, Size: info.Size}
-		_, row.HasKey = keys[info.DepotID]
-		row.IndexGIDs = idx.GIDCount(info.DepotID)
-		row.ManifestStatus = mirror.HeadStatus(info.DepotID, info.GID)
+	rows := make([]DepotCoverage, len(depots))
+	var wg sync.WaitGroup
+	sem := make(chan struct{}, 6)
+	for i, info := range depots {
+		wg.Add(1)
+		go func(i int, info DepotInfo) {
+			defer wg.Done()
+			sem <- struct{}{}
+			defer func() { <-sem }()
+			row := DepotCoverage{DepotID: info.DepotID, GID: info.GID, Size: info.Size}
+			_, row.HasKey = keys[info.DepotID]
+			row.IndexGIDs = idx.GIDCount(info.DepotID)
+			row.ManifestStatus = mirror.HeadStatus(info.DepotID, info.GID)
+			rows[i] = row
+		}(i, info)
+	}
+	wg.Wait()
+	for _, row := range rows {
 		ok := row.HasKey && (row.ManifestStatus == 200 || row.IndexGIDs > 0)
 		if ok {
 			report.DownloadableDepots++
-			report.SizeBytes += info.Size
+			report.SizeBytes += row.Size
 		} else {
 			if !row.HasKey {
-				report.Missing = append(report.Missing, fmt.Sprintf("%d:no-key", info.DepotID))
+				report.Missing = append(report.Missing, fmt.Sprintf("%d:no-key", row.DepotID))
 			} else {
-				report.Missing = append(report.Missing, fmt.Sprintf("%d:no-manifest", info.DepotID))
+				report.Missing = append(report.Missing, fmt.Sprintf("%d:no-manifest", row.DepotID))
 			}
 		}
 		report.Depots = append(report.Depots, row)
