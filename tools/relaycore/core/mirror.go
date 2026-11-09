@@ -93,6 +93,12 @@ func (m *Mirror) HeadStatus(depot int, gid string) int {
 	return result
 }
 
+// Probe reports whether any source actually serves a parseable manifest.
+func (m *Mirror) Probe(depot int, gid string, idx *Index) bool {
+	manifest, _, _, err := m.Fetch(depot, gid, idx)
+	return err == nil && manifest != nil
+}
+
 // Fetch downloads a manifest, probing every candidate/repo/template combination in parallel
 // so a dead host cannot stall the whole restore.
 func (m *Mirror) Fetch(depot int, gid string, idx *Index) (*Manifest, string, string, error) {

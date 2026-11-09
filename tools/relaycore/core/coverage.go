@@ -49,7 +49,9 @@ func CheckCoverage(appid int, keys map[int]string, idx *Index, cacheDir string, 
 			row := DepotCoverage{DepotID: info.DepotID, GID: info.GID, Size: info.Size}
 			_, row.HasKey = keys[info.DepotID]
 			row.IndexGIDs = idx.GIDCount(info.DepotID)
-			row.ManifestStatus = mirror.HeadStatus(info.DepotID, info.GID)
+			if mirror.Probe(info.DepotID, info.GID, idx) {
+				row.ManifestStatus = 200
+			}
 			if row.ManifestStatus != 200 && len(idx.Candidates(info.DepotID, info.GID)) > 0 {
 				// the index only tells us a gid exists; verify something is actually served
 				for _, candidate := range idx.Candidates(info.DepotID, info.GID) {
