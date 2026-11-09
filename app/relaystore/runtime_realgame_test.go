@@ -41,6 +41,23 @@ func TestRuntimeRealGame(t *testing.T) {
 			t.Fatalf("install runtime: %v", err)
 		}
 		t.Logf("%s", message)
+	case "install-loader":
+		message, err := app.InstallRuntimeLoader(appid)
+		if err != nil {
+			t.Fatalf("install loader: %v", err)
+		}
+		t.Logf("%s", message)
+	case "remove-loader":
+		message, err := app.RemoveRuntimeLoader(appid)
+		if err != nil {
+			t.Fatalf("remove loader: %v", err)
+		}
+		t.Logf("%s", message)
+	case "launch":
+		if message := app.LaunchGame(appid); message != "" {
+			t.Fatalf("launch: %s", message)
+		}
+		t.Logf("launched appid %d", appid)
 	case "remove":
 		message, err := app.RemoveRuntime(appid)
 		if err != nil {

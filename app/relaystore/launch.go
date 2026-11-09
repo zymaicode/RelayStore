@@ -224,7 +224,11 @@ func (a *App) LaunchGame(appid int) string {
 	if report.Exe == "" {
 		return report.Detail
 	}
-	cmd := exec.Command(report.Exe)
+	target := report.Exe
+	if status := a.RuntimeStatus(appid); status.Mode == "loader" && status.Loader != "" {
+		target = status.Loader
+	}
+	cmd := exec.Command(target)
 	cmd.Dir = filepath.Dir(report.Exe)
 	cmd.Env = append(os.Environ(), "SteamAppId="+strconv.Itoa(appid), "SteamGameId="+strconv.Itoa(appid))
 	if err := cmd.Start(); err != nil {

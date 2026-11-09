@@ -235,7 +235,8 @@ async function loadGames() {
     const on = btn.dataset.on === "1";
     btn.disabled = true;
     try {
-      const msg = on ? await app().RemoveRuntime(appid) : await app().InstallRuntime(appid);
+      const msg = on ? await app().RemoveRuntime(appid) : await app().InstallRuntimeLoader(appid);
+      if (on) { try { await app().RemoveRuntimeLoader(appid); } catch (e) {} }
       toast(msg, "ok");
     } catch (err) { toast((on ? "移除" : "启用") + "运行时层失败：" + err, "bad"); }
     await loadGames();

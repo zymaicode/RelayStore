@@ -25,6 +25,8 @@ type RuntimeStatus struct {
 	Installed bool   `json:"installed"`
 	DLL       string   `json:"dll"`
 	Targets   []string `json:"targets"`
+	Mode      string   `json:"mode"`
+	Loader    string   `json:"loader"`
 	Backup    bool   `json:"backup"`
 	Arch      string `json:"arch"`
 	Note      string `json:"note"`
@@ -119,6 +121,17 @@ func (a *App) RuntimeStatus(appid int) RuntimeStatus {
 		}
 	}
 	status.Targets = targets
+	for _, name := range []string{"steamclient_loader_x32.exe", "steamclient_loader_x64.exe"} {
+		candidate := filepath.Join(dir, name)
+		if _, err := os.Stat(candidate); err == nil {
+			status.Mode = "loader"
+			status.Loader = candidate
+			break
+		}
+	}
+	if status.Mode == "" && status.Installed {
+		status.Mode = "shim"
+	}
 	return status
 }
 
@@ -271,3 +284,77 @@ func (a *App) RuntimeInfo(appid int) map[string]any {
 
 var _ = strings.TrimSpace
 var _ = json.Marshal
+// InstallRuntimeLoader drops the experimental steamclient + loader into the game folder.
+// This covers games (e.g. GameMaker titles) that call interfaces the steam_api shim lacks.
+func (a *App) InstallRuntimeLoader(appid int) (string, error) {
+	report := a.InspectGame(appid)
+	arch := peArch(report.Exe)
+	if arch == "" {
+		arch = "x32"
+	}
+	dir, err := a.ensureEmulatorArchive()
+	if err != nil {
+		return "", err
+	}
+	clientDir := filepath.Join(dir, "steamclient_experimental")
+	if _, err := os.Stat(clientDir); err != nil {
+		return "", fmt.Errorf("运行时层缺少 steamclient_experimental 目录")
+	}
+	gameDir := a.InstallPathFor(appid)
+	files := []string{"steamclient.dll", "steamclient64.dll", "GameOverlayRenderer.dll", "GameOverlayRenderer64.dll", "steamclient_loader_x32.exe", "steamclient_loader_x64.exe"}
+	for _, name := range files {
+		source := filepath.Join(clientDir, name)
+		if _, err := os.Stat(source); err != nil {
+			continue
+		}
+		in, err := os.Open(source)
+		if err != nil {
+			return "", err
+		}
+		out, err := os.Create(filepath.Join(gameDir, name))
+		if err != nil {
+			in.Close()
+			return "", err
+		}
+		if _, err := io.Copy(out, in); err != nil {
+			out.Close()
+			in.Close()
+			return "", err
+		}
+		out.Close()
+		in.Close()
+	}
+	exeName := filepath.Base(report.Exe)
+	ini := fmt.Sprintf("[SteamClient]\nExe=%s\nExeRunDir=\nExeCommandLine=\nAppId=%d\nSteamClientDll=steamclient.dll\nSteamClient64Dll=steamclient64.dll\n", exeName, appid)
+	if err := os.WriteFile(filepath.Join(gameDir, "ColdClientLoader.ini"), []byte(ini), 0o644); err != nil {
+		return "", err
+	}
+	_ = os.WriteFile(filepath.Join(gameDir, "steam_appid.txt"), []byte(strconv.Itoa(appid)), 0o644)
+	_ = os.MkdirAll(filepath.Join(gameDir, "steam_settings"), 0o755)
+	_ = os.WriteFile(filepath.Join(gameDir, "steam_settings", "configs.appid"), []byte(strconv.Itoa(appid)), 0o644)
+	a.RefreshInspection(appid)
+	loaderName := "steamclient_loader_x32.exe"
+	if arch == "x64" {
+		loaderName = "steamclient_loader_x64.exe"
+	}
+	return fmt.Sprintf("已启用运行时层（loader/%s，%s）", arch, loaderName), nil
+}
+
+// RemoveRuntimeLoader deletes the loader files installed by InstallRuntimeLoader.
+func (a *App) RemoveRuntimeLoader(appid int) (string, error) {
+	gameDir := a.InstallPathFor(appid)
+	files := []string{"steamclient.dll", "steamclient64.dll", "GameOverlayRenderer.dll", "GameOverlayRenderer64.dll", "steamclient_loader_x32.exe", "steamclient_loader_x64.exe", "ColdClientLoader.ini"}
+	removed := 0
+	for _, name := range files {
+		if err := os.Remove(filepath.Join(gameDir, name)); err == nil {
+			removed++
+		}
+	}
+	_ = os.RemoveAll(filepath.Join(gameDir, "steam_settings"))
+	_ = os.Remove(filepath.Join(gameDir, "steam_appid.txt"))
+	a.RefreshInspection(appid)
+	if removed == 0 {
+		return "没有找到可移除的加载器文件", nil
+	}
+	return fmt.Sprintf("已移除运行时层（%d 个文件）", removed), nil
+}
