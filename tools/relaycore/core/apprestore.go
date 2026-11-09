@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
-	"path/filepath"
 	"strconv"
 	"sync"
 	"time"
@@ -109,7 +108,7 @@ func RestoreApp(appid int, outDir string, keys map[int]string, idx *Index, cache
 		}
 		row.Source = source
 		row.GID = gidUsed
-		restorer := &Restorer{Depot: info.DepotID, Key: key, OutDir: filepath.Join(outDir, strconv.Itoa(info.DepotID)), Workers: workers}
+		restorer := &Restorer{Depot: info.DepotID, Key: key, OutDir: outDir, Workers: workers}
 		stats, err := restorer.Run(manifest, 0)
 		row.FilesOK = stats.FilesOK
 		row.Failed = stats.FilesFailed
