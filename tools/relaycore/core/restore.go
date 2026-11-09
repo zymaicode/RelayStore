@@ -219,7 +219,8 @@ func (r *Restorer) Run(manifest *Manifest, fileLimit int) (*RestoreStats, error)
 			stats.FilesFailed++
 			continue
 		}
-		handle, err := os.Create(target)
+		staging := target + ".part"
+		handle, err := os.Create(staging)
 		if err != nil {
 			stats.FilesFailed++
 			stats.Errors = append(stats.Errors, err.Error())
@@ -253,31 +254,32 @@ func (r *Restorer) Run(manifest *Manifest, fileLimit int) (*RestoreStats, error)
 			}
 		}
 		handle.Close()
+		// a failed download must never destroy the file that is already on disk
 		if !ok {
 			stats.FilesFailed++
-			os.Remove(target)
+			os.Remove(staging)
 			continue
 		}
-		hashed, hashErr := hashFile(target)
+		hashed, hashErr := hashFile(staging)
 		if hashErr != nil {
 			stats.FilesFailed++
 			stats.Errors = append(stats.Errors, hashErr.Error())
-			os.Remove(target)
+			os.Remove(staging)
 			continue
 		}
-		hasher := &digestHolder{value: hashed}
-		if !ok {
-			stats.FilesFailed++
-			os.Remove(target)
-			continue
-		}
-		if hasher.value != strings.ToLower(file.ShaContent) {
+		if hashed != strings.ToLower(file.ShaContent) {
 			stats.FilesFailed++
 			stats.Errors = append(stats.Errors, "file sha1 mismatch: "+file.Names[0])
-			os.Remove(target)
+			os.Remove(staging)
 			continue
 		}
-		stats.FilesOK++
+		if err := os.Rename(staging, target); err != nil {
+			stats.FilesFailed++
+			stats.Errors = append(stats.Errors, err.Error())
+			os.Remove(staging)
+			continue
+		}
+				stats.FilesOK++
 		stats.Bytes += file.Size
 	}
 	return stats, nil
