@@ -50,12 +50,21 @@ func CheckCoverage(appid int, keys map[int]string, idx *Index, cacheDir string, 
 			_, row.HasKey = keys[info.DepotID]
 			row.IndexGIDs = idx.GIDCount(info.DepotID)
 			row.ManifestStatus = mirror.HeadStatus(info.DepotID, info.GID)
+			if row.ManifestStatus != 200 && len(idx.Candidates(info.DepotID, info.GID)) > 0 {
+				// the index only tells us a gid exists; verify something is actually served
+				for _, candidate := range idx.Candidates(info.DepotID, info.GID) {
+					if mirror.HeadStatus(info.DepotID, candidate) == 200 {
+						row.ManifestStatus = 200
+						break
+					}
+				}
+			}
 			rows[i] = row
 		}(i, info)
 	}
 	wg.Wait()
 	for _, row := range rows {
-		ok := row.HasKey && (row.ManifestStatus == 200 || row.IndexGIDs > 0)
+		ok := row.HasKey && row.ManifestStatus == 200
 		if ok {
 			report.DownloadableDepots++
 			report.SizeBytes += row.Size

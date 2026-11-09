@@ -93,10 +93,18 @@ func (m *Mirror) HeadStatus(depot int, gid string) int {
 	return result
 }
 
-// Fetch downloads a manifest, trying index-known repos first and then the gid fallbacks.
+// Fetch downloads a manifest, probing every candidate/repo/template combination in parallel
+// so a dead host cannot stall the whole restore.
 func (m *Mirror) Fetch(depot int, gid string, idx *Index) (*Manifest, string, string, error) {
 	candidates := idx.Candidates(depot, gid)
-	var lastErr error
+	if len(candidates) == 0 {
+		candidates = []string{gid}
+	}
+	type combo struct {
+		url  string
+		gid  string
+	}
+	var combos []combo
 	for _, candidate := range candidates {
 		name := fmt.Sprintf("%d_%s.manifest", depot, candidate)
 		repos := idx.ReposFor(depot, candidate)
@@ -108,26 +116,63 @@ func (m *Mirror) Fetch(depot int, gid string, idx *Index) (*Manifest, string, st
 		}
 		for _, repo := range ordered {
 			for _, template := range mirrorTemplates {
-				url := fmt.Sprintf(template, repo, name)
-				body, status, err := m.get(url)
-				if err != nil || status != 200 || len(body) == 0 {
-					lastErr = fmt.Errorf("%s -> %v/%d", url, err, status)
-					continue
-				}
-				manifest, err := ParseManifest(body)
-				if err != nil {
-					lastErr = err
-					continue
-				}
-				return manifest, url, candidate, nil
+				combos = append(combos, combo{url: fmt.Sprintf(template, repo, name), gid: candidate})
 			}
 		}
 	}
-	if lastErr == nil {
-		lastErr = fmt.Errorf("no mirror served depot %d gid %s", depot, gid)
+
+	type hit struct {
+		body []byte
+		url  string
+		gid  string
 	}
-	return nil, "", "", lastErr
+	results := make(chan hit, 1)
+	probeClient := &http.Client{Timeout: 20 * time.Second}
+	var wg sync.WaitGroup
+	sem := make(chan struct{}, 12)
+	done := make(chan struct{})
+	var once sync.Once
+	for _, c := range combos {
+		wg.Add(1)
+		go func(c combo) {
+			defer wg.Done()
+			select {
+			case <-done:
+				return
+			default:
+			}
+			sem <- struct{}{}
+			defer func() { <-sem }()
+			response, err := probeClient.Get(c.url)
+			if err != nil {
+				return
+			}
+			defer response.Body.Close()
+			if response.StatusCode != 200 {
+				return
+			}
+			body, err := io.ReadAll(response.Body)
+			if err != nil || len(body) == 0 {
+				return
+			}
+			once.Do(func() {
+				close(done)
+				results <- hit{body: body, url: c.url, gid: c.gid}
+			})
+		}(c)
+	}
+	go func() { wg.Wait(); close(results) }()
+
+	for h := range results {
+		manifest, err := ParseManifest(h.body)
+		if err != nil {
+			continue
+		}
+		return manifest, h.url, h.gid, nil
+	}
+	return nil, "", "", fmt.Errorf("no mirror served depot %d gid %s (%d sources tried)", depot, gid, len(combos))
 }
+
 
 func (i *Index) ReposFor(depot int, gid string) []string {
 	if i == nil {
