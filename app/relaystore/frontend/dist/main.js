@@ -202,12 +202,17 @@ async function loadGames() {
   const checks = await Promise.all(games.map(async (g) => {
     try { return await app().InspectGame(g.appid); } catch (e) { return null; }
   }));
+  const runtimes = await Promise.all(games.map(async (g) => {
+    try { return await app().RuntimeStatus(g.appid); } catch (e) { return null; }
+  }));
   list.innerHTML = games.map((g, i) => {
     const meta = metas[g.appid] || metas[String(g.appid)] || {};
     const check = checks[i] || { verdict: "missing", detail: "无法预检" };
     const title = meta.name || ("AppID " + g.appid);
     const initial = (meta.name || String(g.appid)).trim().slice(0, 1).toUpperCase();
+    const runtime = runtimes[i] || { installed: false };
     const canLaunch = check.verdict === "ready" || check.verdict === "anticheat" || check.verdict === "needs_steam";
+    const needsRuntime = check.verdict === "needs_steam";
     return '<div class="game">' +
       '<div class="cover">' + initial + '</div>' +
       '<div class="meta"><div class="title">' + title +
@@ -218,12 +223,23 @@ async function loadGames() {
       "</div>" +
       '<div class="size">' + fmtBytes(g.bytes) + ' · ' + g.files + ' 个文件</div>' +
       (canLaunch ? '<button data-launch="' + g.appid + '">启动</button>' : "") +
+      (needsRuntime ? '<button class="ghost" data-runtime="' + g.appid + '" data-on="' + (runtime.installed ? "1" : "0") + '" title="' + (runtime.installed ? "移除运行时层" : "启用运行时层（gse_fork，按需下载）") + '">' + (runtime.installed ? "移除运行时" : "启用运行时") + '</button>' : "") +
       '<button class="ghost" data-exe="' + g.appid + '" title="指定主程序">主程序</button>' +
       '<button class="ghost" data-refresh="' + g.appid + '" title="重新检测">重检</button>' +
       '<button class="ghost" data-open="' + g.path.replace(/"/g, "&quot;") + '">打开目录</button>' +
       '</div>';
   }).join("");
   list.querySelectorAll("[data-open]").forEach((btn) => btn.addEventListener("click", () => app().OpenPath(btn.dataset.open)));
+  list.querySelectorAll("[data-runtime]").forEach((btn) => btn.addEventListener("click", async () => {
+    const appid = Number(btn.dataset.runtime);
+    const on = btn.dataset.on === "1";
+    btn.disabled = true;
+    try {
+      const msg = on ? await app().RemoveRuntime(appid) : await app().InstallRuntime(appid);
+      toast(msg, "ok");
+    } catch (err) { toast((on ? "移除" : "启用") + "运行时层失败：" + err, "bad"); }
+    await loadGames();
+  }));
   list.querySelectorAll("[data-refresh]").forEach((btn) => btn.addEventListener("click", async () => {
     await app().RefreshInspection(Number(btn.dataset.refresh));
     await loadGames();
