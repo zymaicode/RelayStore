@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
@@ -206,6 +207,13 @@ func sha256File(path string) (string, error) {
 	return hex.EncodeToString(hasher.Sum(nil)), nil
 }
 
+// emitEvent and quitApp are indirect so tests can run the update path without a Wails runtime.
+var emitEvent = func(ctx context.Context, name string, data map[string]any) {
+	runtime.EventsEmit(ctx, name, data)
+}
+
+var quitApp = func(ctx context.Context) { runtime.Quit(ctx) }
+
 // DownloadInstaller fetches the installer, verifies its sha256 and returns the path.
 func (a *App) DownloadInstaller(url, name, wantSHA string) (string, error) {
 	if url == "" {
@@ -216,7 +224,7 @@ func (a *App) DownloadInstaller(url, name, wantSHA string) (string, error) {
 		return "", err
 	}
 	target := filepath.Join(dir, name)
-	runtime.EventsEmit(a.ctx, "update:progress", map[string]any{"stage": "download", "percent": 5.0})
+	emitEvent(a.ctx, "update:progress", map[string]any{"stage": "download", "percent": 5.0})
 
 	client := &http.Client{Timeout: 600 * time.Second}
 	request, err := http.NewRequest(http.MethodGet, url, nil)
@@ -249,7 +257,7 @@ func (a *App) DownloadInstaller(url, name, wantSHA string) (string, error) {
 			written += int64(n)
 			if total > 0 {
 				percent := 5 + 85*float64(written)/float64(total)
-				runtime.EventsEmit(a.ctx, "update:progress", map[string]any{"stage": "download", "percent": percent, "bytes": written, "total": total})
+				emitEvent(a.ctx, "update:progress", map[string]any{"stage": "download", "percent": percent, "bytes": written, "total": total})
 			}
 		}
 		if readErr != nil {
@@ -258,7 +266,7 @@ func (a *App) DownloadInstaller(url, name, wantSHA string) (string, error) {
 	}
 	out.Close()
 
-	runtime.EventsEmit(a.ctx, "update:progress", map[string]any{"stage": "verify", "percent": 92.0})
+	emitEvent(a.ctx, "update:progress", map[string]any{"stage": "verify", "percent": 92.0})
 	got, err := sha256File(target)
 	if err != nil {
 		return "", err
@@ -267,7 +275,7 @@ func (a *App) DownloadInstaller(url, name, wantSHA string) (string, error) {
 		_ = os.Remove(target)
 		return "", fmt.Errorf("校验失败：期望 %s…，实际 %s…", wantSHA[:12], got[:12])
 	}
-	runtime.EventsEmit(a.ctx, "update:progress", map[string]any{"stage": "verified", "percent": 100.0, "path": target})
+	emitEvent(a.ctx, "update:progress", map[string]any{"stage": "verified", "percent": 100.0, "path": target})
 	return target, nil
 }
 
@@ -280,10 +288,10 @@ func (a *App) RunInstaller(path string) error {
 	if err := cmd.Start(); err != nil {
 		return err
 	}
-	runtime.EventsEmit(a.ctx, "update:done", map[string]any{"path": path})
+	emitEvent(a.ctx, "update:done", map[string]any{"path": path})
 	go func() {
 		time.Sleep(2 * time.Second)
-		runtime.Quit(a.ctx)
+		quitApp(a.ctx)
 	}()
 	return nil
 }
