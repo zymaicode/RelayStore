@@ -15,6 +15,27 @@ type DepotInfo struct {
 	GID     string `json:"gid"`
 	Size    int64  `json:"size"`
 	Name    string `json:"name,omitempty"`
+	OS      string `json:"os,omitempty"`
+}
+
+// IsWindowsDepot reports whether a depot applies to Windows (empty oslist means all platforms).
+func (d DepotInfo) IsWindowsDepot() bool {
+	os := strings.ToLower(strings.TrimSpace(d.OS))
+	if os == "" {
+		return true
+	}
+	return strings.Contains(os, "windows")
+}
+
+// WindowsDepots keeps only the depots a Windows install needs.
+func WindowsDepots(list []DepotInfo) []DepotInfo {
+	out := make([]DepotInfo, 0, len(list))
+	for _, depot := range list {
+		if depot.IsWindowsDepot() {
+			out = append(out, depot)
+		}
+	}
+	return out
 }
 
 // extractAppBlock cuts the `"<appid>" { ... }` block out of steamcmd output.
@@ -56,6 +77,11 @@ func depotsFromAppInfo(root *Node) []DepotInfo {
 			continue
 		}
 		info := DepotInfo{DepotID: id, Name: depot.Value}
+		if config := depot.Child("config"); config != nil {
+			if osNode := config.Child("oslist"); osNode != nil {
+				info.OS = osNode.Value
+			}
+		}
 		if public := depot.Path("manifests", "public"); public != nil {
 			if gid := public.Child("gid"); gid != nil {
 				info.GID = gid.Value

@@ -71,6 +71,7 @@ func RestoreApp(appid int, outDir string, keys map[int]string, idx *Index, cache
 	if err != nil {
 		return nil, err
 	}
+	depots = WindowsDepots(depots)
 	if err := os.MkdirAll(outDir, 0o755); err != nil {
 		return nil, err
 	}

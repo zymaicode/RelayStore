@@ -31,6 +31,7 @@ func CheckCoverage(appid int, keys map[int]string, idx *Index, cacheDir string, 
 	if err != nil {
 		return nil, err
 	}
+	depots = WindowsDepots(depots)
 	if mirror == nil {
 		mirror = NewMirror()
 	}
