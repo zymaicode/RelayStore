@@ -47,7 +47,12 @@ func (r *Restorer) chunkURL(sha string) string {
 func (r *Restorer) fetchChunk(client *http.Client, sha string, cacheDir string) (string, error) {
 	plainPath := filepath.Join(cacheDir, sha)
 	if info, err := os.Stat(plainPath); err == nil && info.Size() > 0 {
-		return plainPath, nil
+		// the cache can be cleared while other depots still run; make sure the file is readable
+		if handle, openErr := os.Open(plainPath); openErr == nil {
+			handle.Close()
+			return plainPath, nil
+		}
+		_ = os.Remove(plainPath)
 	}
 	hosts := []string{r.Host}
 	for _, candidate := range cdnHosts {

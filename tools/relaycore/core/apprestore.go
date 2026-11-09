@@ -162,8 +162,6 @@ func RestoreApp(appid int, outDir string, keys map[int]string, idx *Index, cache
 			return row
 		}
 		row.Status = "ok"
-		// the chunk cache only exists for resume; drop it once the depot is complete
-		_ = os.RemoveAll(filepath.Join(outDir, ".chunks"))
 		return row
 	}
 
@@ -180,8 +178,10 @@ func RestoreApp(appid int, outDir string, keys map[int]string, idx *Index, cache
 				row := process(info)
 				mu.Lock()
 				rows[i] = row
-				state[info.DepotID] = row.Status
-				saveState(statePath, state)
+				if row.Status != "skipped" {
+					state[info.DepotID] = row.Status
+					saveState(statePath, state)
+				}
 				if onProgress != nil {
 					onProgress(row)
 				}
@@ -194,8 +194,10 @@ func RestoreApp(appid int, outDir string, keys map[int]string, idx *Index, cache
 		for _, info := range depots {
 			row := process(info)
 			result.Depots = append(result.Depots, row)
-			state[info.DepotID] = row.Status
-			saveState(statePath, state)
+			if row.Status != "skipped" {
+				state[info.DepotID] = row.Status
+				saveState(statePath, state)
+			}
 			if onProgress != nil {
 				onProgress(row)
 			}
@@ -209,10 +211,18 @@ func RestoreApp(appid int, outDir string, keys map[int]string, idx *Index, cache
 		}
 	}
 	result.OK = len(result.Depots) > 0
+	allComplete := true
 	for _, row := range result.Depots {
-		if row.Status != "ok" && row.Status != "skipped" {
+		switch row.Status {
+		case "ok", "skipped", "skipped_arch":
+		default:
 			result.OK = false
+			allComplete = false
 		}
+	}
+	// the chunk cache only exists to resume interrupted depots: drop it once everything landed
+	if allComplete {
+		_ = os.RemoveAll(filepath.Join(outDir, ".chunks"))
 	}
 	return result, nil
 }

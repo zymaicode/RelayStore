@@ -426,9 +426,10 @@ func (a *App) downloadProgress(appid int) (bool, []int) {
 	}
 	var pending []int
 	for depot, status := range state {
-		if status != "ok" {
-			pending = append(pending, depot)
+		if status == "ok" || status == "skipped_arch" {
+			continue
 		}
+		pending = append(pending, depot)
 	}
 	if len(pending) == 0 {
 		return false, nil
