@@ -207,7 +207,7 @@ async function loadGames() {
     const check = checks[i] || { verdict: "missing", detail: "无法预检" };
     const title = meta.name || ("AppID " + g.appid);
     const initial = (meta.name || String(g.appid)).trim().slice(0, 1).toUpperCase();
-    const canLaunch = check.verdict === "ready" || check.verdict === "anticheat";
+    const canLaunch = check.verdict === "ready" || check.verdict === "anticheat" || check.verdict === "needs_steam";
     return '<div class="game">' +
       '<div class="cover">' + initial + '</div>' +
       '<div class="meta"><div class="title">' + title +
