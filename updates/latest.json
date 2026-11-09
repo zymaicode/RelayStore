@@ -1,6 +1,6 @@
 {
-  "version": "v0.65.0",
-  "portable": { "name": "relaystore.exe", "sha256": "12a23706c4dcbb48922e3d9c047ef2822941518428a18502c51eaaa13332a6c7" },
-  "installer": { "name": "relaystore-amd64-installer.exe", "sha256": "283a0f8d76db92f112382f0122fc02357f0c84b24edc25493080d4ef4815b333" },
-  "source": "relaystore-v0.65.0.zip"
+  "version": "v0.66.0",
+  "portable": { "name": "relaystore.exe", "sha256": "c862c6a8fc532de1d17297f5860f5551056af66e98a064425b563fae44563a23" },
+  "installer": { "name": "relaystore-amd64-installer.exe", "sha256": "32a97a745e0a29c037846e6cbe0d4abf813aad06f2d0b1158d2f0ad4f2bb9902" },
+  "source": "relaystore-v0.66.0.zip"
 }
