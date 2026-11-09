@@ -5,6 +5,7 @@ import (
 	"os"
 	"path/filepath"
 	"strconv"
+	"strings"
 	"testing"
 )
 
@@ -54,10 +55,11 @@ func TestRuntimeRealGame(t *testing.T) {
 		}
 		t.Logf("%s", message)
 	case "launch":
-		if message := app.LaunchGame(appid); message != "" {
+		message := app.LaunchGame(appid)
+		if strings.HasPrefix(message, "运行时层不可用") {
 			t.Fatalf("launch: %s", message)
 		}
-		t.Logf("launched appid %d", appid)
+		t.Logf("launched appid %d note=%q", appid, message)
 	case "remove":
 		message, err := app.RemoveRuntime(appid)
 		if err != nil {

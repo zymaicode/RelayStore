@@ -251,8 +251,11 @@ async function loadGames() {
     if (chosen) { await loadGames(); toast("已指定主程序", "ok"); }
   }));
   list.querySelectorAll("[data-launch]").forEach((btn) => btn.addEventListener("click", async () => {
-    const err = await app().LaunchGame(Number(btn.dataset.launch));
-    if (err) toast("启动失败：" + err, "bad");
+    btn.disabled = true;
+    const msg = await app().LaunchGame(Number(btn.dataset.launch));
+    btn.disabled = false;
+    if (msg && msg.startsWith("运行时层不可用")) toast(msg, "bad");
+    else if (msg) toast(msg + "，正在启动…", "ok");
     else toast("已启动 AppID " + btn.dataset.launch, "ok");
   }));
 }

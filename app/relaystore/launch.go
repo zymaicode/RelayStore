@@ -218,12 +218,41 @@ func (a *App) InspectGame(appid int) GameInspection {
 	return report
 }
 
+// ensureRuntimeForLaunch installs the runtime layer when a game needs it.
+// It returns a human note when something was changed or when it could not help.
+func (a *App) ensureRuntimeForLaunch(appid int) string {
+	report := a.InspectGame(appid)
+	if report.Verdict != "needs_steam" {
+		return ""
+	}
+	status := a.RuntimeStatus(appid)
+	needLoader := status.Mode == ""
+	if status.Mode == "shim" {
+		if result, ok := a.lastLaunchResult(appid); ok && result.ExitCode != 0 {
+			needLoader = true // the shim did not survive last time, escalate to the loader
+		}
+	}
+	if !needLoader {
+		return ""
+	}
+	if _, err := a.InstallRuntimeLoader(appid); err != nil {
+		return "运行时层不可用：" + err.Error()
+	}
+	// the shim DLL would shadow the loader for some titles, so restore the original
+	if status.Backup {
+		_, _ = a.RemoveRuntime(appid)
+	}
+	return "已自动启用运行时层（loader）"
+}
+
 // LaunchGame starts the game executable with the install folder as working directory.
+// It auto-enables the runtime layer for Steam-dependent titles.
 func (a *App) LaunchGame(appid int) string {
 	report := a.InspectGame(appid)
 	if report.Exe == "" {
 		return report.Detail
 	}
+	note := a.ensureRuntimeForLaunch(appid)
 	target := report.Exe
 	if status := a.RuntimeStatus(appid); status.Mode == "loader" && status.Loader != "" {
 		target = status.Loader
@@ -247,7 +276,7 @@ func (a *App) LaunchGame(appid int) string {
 		a.recordLaunchResult(appid, code)
 		a.RefreshInspection(appid)
 	}()
-	return ""
+	return note
 }
 // ---- executable overrides + inspection cache (both live in the data dir) ----
 
