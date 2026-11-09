@@ -109,7 +109,7 @@
   .chip { font-size:11px; font-weight:500; padding:3px 9px; border: var(--bw) solid var(--card-bd);
           border-radius: var(--r-pill); background: var(--canvas); color: var(--muted); white-space:nowrap; }
   .chip.update { background: var(--accent); color: var(--accent-fg); cursor:pointer; font-weight:700; }
-  .icon-btn { width:32px; height:32px; display:grid; place-items:center; border: var(--bw) solid var(--card-bd);
+  .icon-btn { width:32px; height:32px; display:grid; place-items:center; line-height:0; border: var(--bw) solid var(--card-bd);
               border-radius: var(--r-sm); background: var(--canvas); color: var(--fg); cursor:pointer; box-shadow: var(--sh-1); }
   .icon-btn:hover { background: var(--accent); color: var(--accent-fg); }
 
@@ -129,7 +129,7 @@
   .nav .chevron { margin-left:auto; font-size:10px; opacity:.7; }
   .subnav { display:none; flex-direction:column; gap:2px; margin:2px 0 6px 18px; }
   .subnav.open { display:flex; }
-  .subitem { display:flex; align-items:center; gap:8px; padding:7px 8px; font-size:12.5px;
+  .subitem { display:flex; align-items:center; gap:8px; padding:7px 8px; font-size:12.5px; border:1.5px solid transparent;
              border: var(--bw) solid transparent; border-radius: var(--r-sm); cursor:pointer; color: inherit; }
   .subitem:hover { background: var(--nav-act); }
   .subitem.active { border-color: var(--card-bd); background: var(--nav-act); font-weight:600; }
@@ -141,6 +141,13 @@
 
   /* ---------- content ---------- */
   .content { flex:1; overflow:auto; padding:22px 26px 36px; }
+  button:focus-visible, input:focus-visible, .nav:focus-visible { outline: 2px solid var(--s-ok); outline-offset: 2px; }
+  .small { font-size:11.5px; }
+  #taskDepots td.num, #taskDepots th:nth-child(n+3) { text-align:right; font-family: var(--font-mono); font-variant-numeric: tabular-nums; }
+  #taskDepots td { padding:7px 6px; border-bottom:1px solid var(--hairline); font-size:12px; }
+  #taskDepots th { color: var(--muted); font-weight:600; font-size:11px; text-transform:uppercase; letter-spacing:.04em; }
+  .bar i.running { width:100% !important; background: repeating-linear-gradient(45deg, var(--accent) 0 10px, var(--accent-hov) 10px 20px); background-size:28px 28px; animation: barStripe 1s linear infinite; }
+  @keyframes barStripe { from { background-position:0 0; } to { background-position:28px 0; } }
   .page { display:none; max-width:1180px; }
   .page.active { display:block; }
   .page-head { display:flex; align-items:flex-end; justify-content:space-between; gap:12px; margin-bottom:16px; }
@@ -186,16 +193,35 @@
 
   /* ---------- lists ---------- */
   .gamelist { display:grid; gap:10px; }
-  .game { display:flex; align-items:center; gap:14px; padding:12px 14px; background: var(--canvas);
-          border: var(--bw) solid var(--card-bd); border-radius: var(--r-md); box-shadow: var(--sh-1); }
-  .game:hover { background: var(--nav-act); }
+  .game { display:grid; grid-template-columns: 46px minmax(0, 1fr) auto auto;
+          align-items:center; gap:14px; padding:12px 14px; background: var(--canvas);
+          border:var(--bw) solid var(--card-bd); box-shadow: var(--sh-1); min-height:76px; }
+  .game { transition: box-shadow .08s ease, transform .08s ease; }
+  .game:hover { background: var(--nav-act); box-shadow: var(--sh-2); }
   .game .cover { width:46px; height:46px; display:grid; place-items:center; font-family: var(--font-ui);
-                 font-weight:700; font-size:15px; background: var(--accent); color: var(--accent-fg);
-                 border: var(--bw) solid var(--card-bd); border-radius: var(--r-sm); flex:0 0 46px; }
-  .game .meta { flex:1; min-width:0; }
-  .game .title { font-family: var(--font-ui); font-weight:700; font-size:13.5px; }
-  .game .path { color: var(--muted); font-size:11.5px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-  .game .size { color: var(--muted); font-size:12px; white-space:nowrap; font-family: var(--font-mono); }
+                font-weight:700; font-size:18px; background: var(--accent); color: var(--accent-fg);
+                border:var(--bw) solid var(--card-bd); box-shadow: var(--sh-1); }
+  .game .meta { min-width:0; display:flex; flex-direction:column; gap:3px; }
+  .game .rowline { display:flex; align-items:center; gap:7px; flex-wrap:wrap; row-gap:5px; }
+  .game .title { font-family: var(--font-ui); font-weight:700; font-size:13.5px;
+                max-width:34ch; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .game .path { color: var(--muted); font-size:11.5px; white-space:nowrap; overflow:hidden;
+               text-overflow:ellipsis; }
+  .game .crash { color: var(--s-err); font-size:11.5px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .game .stats { text-align:right; min-width:118px; font-family: var(--font-mono);
+                font-variant-numeric: tabular-nums; line-height:1.35; }
+  .game .stats-main { font-size:12.5px; color: var(--fg); }
+  .game .stats-sub { font-size:11px; color: var(--muted); }
+  .game .actions { display:flex; align-items:center; gap:7px; flex-wrap:wrap; justify-content:flex-end; }
+  .game .actions button { font-size:12px; padding:6px 11px; box-shadow: var(--sh-1); }
+  .game .actions button.primary { background: var(--accent); color: var(--accent-fg); }
+  .game .actions .sep { width:1px; height:20px; background: var(--hairline); opacity:.7; }
+  .game .stats { align-self:center; }
+  .game .actions button:disabled { opacity:.55; cursor:not-allowed; }
+
+  .tag { font-size:10.5px; padding:1.5px 7px; border:1.5px solid var(--card-bd); border-radius: var(--r-pill);
+         color: var(--muted); background: var(--surface-soft); white-space:nowrap; }
+  html[data-theme="dark"] .tag { border-color:#8592a8; background:#242a34; color:#c7d2e0; }
   .verdict { font-size:10.5px; font-weight:700; padding:2px 7px; border: var(--bw) solid var(--card-bd);
              border-radius: var(--r-pill); white-space:nowrap; }
   .verdict.ready { background: var(--accent); color: var(--accent-fg); }
@@ -206,7 +232,7 @@
   html[data-theme="dark"] .verdict.needs_steam { background: #78350f; color: #fde68a; }
   html[data-theme="dark"] .verdict.drm_locked { background: #7f1d1d; color: #fecaca; }
   html[data-theme="dark"] .verdict.anticheat { background: #7c2d12; color: #fed7aa; }
-  .empty { padding:26px 12px; text-align:center; color: var(--muted);
+  .empty { padding:18px 12px; text-align:center; color: var(--muted);
            border: var(--bw) dashed var(--card-bd); border-radius: var(--r-md); }
 
   /* ---------- toast ---------- */
@@ -400,7 +426,7 @@
       <section class="page active" id="page-store">
         <div class="page-head">
           <div><h2>商店</h2><p class="sub">内置热门榜单（按热度排序）；搜索支持名称关键字或直接输入 AppID。</p></div>
-          <span class="chip" id="storeUpdated">-</span>
+          <span class="chip" id="storeUpdated" title="榜单最后更新时间">尚未加载</span>
         </div>
         <div class="card">
           <div class="row">
@@ -410,7 +436,10 @@
           </div>
         </div>
         <div class="card">
-          <h3>热门游戏</h3>
+          <div class="row" style="justify-content:space-between;align-items:baseline;margin-bottom:2px">
+            <h3 style="margin:0">热门游戏</h3>
+            <span class="muted" id="storeCount" style="font-size:11.5px"></span>
+          </div>
           <div class="gamelist" id="storeList"></div>
         </div>
         <div class="card" id="storeDetail" style="display:none">
@@ -431,10 +460,29 @@
       <section class="page" id="page-tasks">
         <div class="page-head"><div><h2>下载任务</h2><p class="sub">当前任务的进度与事件日志。</p></div></div>
         <div class="card">
-          <div class="row" style="justify-content:space-between"><h3 style="margin:0">进度</h3><span id="stats" class="muted">空闲</span></div>
+          <div class="row" style="justify-content:space-between;align-items:baseline">
+            <h3 style="margin:0">进度</h3>
+            <span id="stats" class="muted">空闲</span>
+          </div>
           <div class="bar" style="margin-top:10px"><i id="fill"></i></div>
+          <div class="muted" id="taskHint" style="margin-top:8px;font-size:11.5px">在「游戏库」或「商店」里点下载后，这里会显示每个 depot 的进度。</div>
         </div>
-        <div class="card"><h3>事件日志</h3><pre id="log"></pre></div>
+        <div class="card">
+          <div class="row" style="justify-content:space-between;align-items:baseline">
+            <h3 style="margin:0">Depot 进度</h3>
+            <span class="muted" id="taskSummary" style="font-size:11.5px"></span>
+          </div>
+          <table id="taskDepots" style="margin-top:10px">
+            <tr><th>depot</th><th>状态</th><th>文件</th><th>大小</th><th>耗时</th></tr>
+          </table>
+        </div>
+        <div class="card">
+          <div class="row" style="justify-content:space-between;align-items:baseline">
+            <h3 style="margin:0">事件日志</h3>
+            <button class="ghost" id="clearLog" style="font-size:11.5px;padding:4px 9px">清空</button>
+          </div>
+          <pre id="log"></pre>
+        </div>
       </section>
 
       <section class="page" id="page-settings">

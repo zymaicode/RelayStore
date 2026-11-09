@@ -74,7 +74,11 @@ function applyTheme(choice) {
   const resolved = resolveTheme(themeChoice);
   document.documentElement.dataset.theme = resolved;
   const btn = $("themeBtn");
-  if (btn) btn.textContent = resolved === "dark" ? "☀" : "☾";
+  if (btn) {
+    btn.innerHTML = resolved === "dark"
+      ? '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="4.2"/><path d="M12 2.5v2.6M12 18.9v2.6M2.5 12h2.6M18.9 12h2.6M5.1 5.1l1.8 1.8M17.1 17.1l1.8 1.8M18.9 5.1l-1.8 1.8M6.9 17.1l-1.8 1.8"/></svg>'
+      : '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M21 12.9A9 9 0 1 1 11.1 3a7 7 0 0 0 9.9 9.9z"/></svg>';
+  }
   document.querySelectorAll(".theme-opt").forEach((el) => el.classList.toggle("active", el.dataset.theme === themeChoice));
 }
 
@@ -215,25 +219,35 @@ async function loadGames() {
     const needsRuntime = check.verdict === "needs_steam";
     const partial = !!check.partial;
     const pendingCount = (check.pending || []).length;
+    const chips = ["<span class=\"verdict " + check.verdict + "\" title=\"" + (check.detail || "") + "\">" + (VERDICT_TEXT[check.verdict] || check.verdict) + "</span>"];
+    if (partial) chips.push("<span class=\"verdict needs_steam\" title=\"还有 " + pendingCount + " 个 depot 未完成\">下载未完成</span>");
+    if (runtime.mode) chips.push("<span class=\"tag\" title=\"Steam 运行时层\">运行时 " + runtime.mode + "</span>");
+    else if (needsRuntime) chips.push("<span class=\"tag\" title=\"点击启动会自动启用\">运行时未启用</span>");
+    if (check.lastExit && check.lastExit !== 0) {
+      const code = check.lastExit < 0 ? "0x" + (check.lastExit >>> 0).toString(16).toUpperCase() : String(check.lastExit);
+      var crashLine = "<div class=\"crash\" title=\"上次启动异常退出\">上次启动崩溃：" + code + "</div>";
+    }
     return '<div class="game">' +
-      '<div class="cover">' + initial + '</div>' +
-      '<div class="meta"><div class="title">' + title +
-      ' <span class="verdict ' + check.verdict + '" title="' + (check.detail || "") + '">' + (VERDICT_TEXT[check.verdict] || check.verdict) + "</span>" +
-      (partial ? ' <span class="verdict needs_steam" style="margin-left:6px">下载未完成</span>' : "") +
+      '<div class="cover">' + initial + "</div>" +
+      '<div class="meta">' +
+        '<div class="rowline">' +
+          '<span class="title" title="' + title + '">' + title + "</span>" +
+          chips.join("") +
+        "</div>" +
+        '<div class="path" title="' + g.path + '">AppID ' + g.appid + " · " + g.path + "</div>" +
+        (crashLine || "") +
       "</div>" +
-      '<div class="path" title="' + g.path + '">AppID ' + g.appid + ' · ' + g.path + '</div>' +
-      (check.detail ? '<div class="path">' + check.detail + "</div>" : "") +
-      (runtime.mode ? '<div class="path"><span class="chip" style="font-size:10.5px">运行时：' + (runtime.mode === "loader" ? "loader" : "shim") + '</span></div>' : "") +
-      (check.lastExit && check.lastExit !== 0 ? '<div class="path bad">上次启动崩溃：退出码 ' + check.lastExit + '（0x' + (check.lastExit < 0 ? (check.lastExit >>> 0).toString(16).toUpperCase() : check.lastExit.toString(16).toUpperCase()) + '）</div>' : "") +
+      '<div class="stats"><div class="stats-main">' + fmtBytes(g.bytes) + '</div><div class="stats-sub">' + g.files + " 个文件</div></div>" +
+      '<div class="actions">' +
+        (canLaunch ? '<button class="primary" data-launch="' + g.appid + '">启动</button>' : "") +
+        (partial ? '<button class="ghost" data-resume="' + g.appid + '" title="重新拉起未完成的 depot">继续下载（' + pendingCount + '）</button>' : "") +
+        (needsRuntime ? '<button class="ghost" data-runtime="' + g.appid + '" data-on="' + (runtime.installed ? "1" : "0") + '" title="' + (runtime.installed ? "移除运行时层" : "启用运行时层（gse_fork，按需下载）") + '">' + (runtime.installed ? "移除运行时" : "启用运行时") + "</button>" : "") +
+        '<span class="sep" aria-hidden="true"></span>' +
+        '<button class="ghost" data-exe="' + g.appid + '" title="指定主程序">主程序</button>' +
+        '<button class="ghost" data-refresh="' + g.appid + '" title="重新检测">重检</button>' +
+        '<button class="ghost" data-open="' + g.path.replace(/"/g, "&quot;") + '">打开目录</button>' +
       "</div>" +
-      '<div class="size">' + fmtBytes(g.bytes) + ' · ' + g.files + ' 个文件</div>' +
-      (canLaunch ? '<button data-launch="' + g.appid + '">启动</button>' : "") +
-      (partial ? '<button class="ghost" data-resume="' + g.appid + '" title="重新拉起未完成的 depot">继续下载（' + pendingCount + '）</button>' : "") +
-      (needsRuntime ? '<button class="ghost" data-runtime="' + g.appid + '" data-on="' + (runtime.installed ? "1" : "0") + '" title="' + (runtime.installed ? "移除运行时层" : "启用运行时层（gse_fork，按需下载）") + '">' + (runtime.installed ? "移除运行时" : "启用运行时") + '</button>' : "") +
-      '<button class="ghost" data-exe="' + g.appid + '" title="指定主程序">主程序</button>' +
-      '<button class="ghost" data-refresh="' + g.appid + '" title="重新检测">重检</button>' +
-      '<button class="ghost" data-open="' + g.path.replace(/"/g, "&quot;") + '">打开目录</button>' +
-      '</div>';
+    '</div>';
   }).join("");
   list.querySelectorAll("[data-open]").forEach((btn) => btn.addEventListener("click", () => app().OpenPath(btn.dataset.open)));
   list.querySelectorAll("[data-resume]").forEach((btn) => btn.addEventListener("click", async () => {
@@ -420,6 +434,7 @@ $("pickData").addEventListener("click", async () => { const d = await app().Pick
 $("pickGame").addEventListener("click", async () => { const d = await app().PickFolder("选择游戏目录", $("gameDir").value); if (d) $("gameDir").value = d; });
 $("openData").addEventListener("click", () => app().OpenPath($("dataDir").value));
 $("openGame").addEventListener("click", () => app().OpenPath($("gameDir").value));
+$("clearLog").addEventListener("click", () => { $("log").textContent = ""; });
 $("later").addEventListener("click", () => $("overlay").classList.remove("show"));
 $("downloadData").addEventListener("click", async () => {
   $("downloadData").disabled = true;
@@ -428,16 +443,48 @@ $("downloadData").addEventListener("click", async () => {
   catch (err) { $("dataStatus").textContent = "失败：" + err; $("downloadData").disabled = false; }
 });
 
-window.runtime.EventsOn("restore:start", (appid) => log("[job] appid=" + appid + " 开始"));
+const STATUS_TEXT = {
+  ok: '<span class="ok">完成</span>',
+  skipped: '<span class="muted">跳过</span>',
+  skipped_arch: '<span class="muted">跳过（架构不符）</span>',
+  failed: '<span class="bad">失败</span>',
+  missing_manifest: '<span class="bad">缺少清单</span>',
+  missing_key: '<span class="bad">缺少密钥</span>',
+};
+const STATUS_PLAIN = {
+  ok: "完成", skipped: "跳过", skipped_arch: "跳过（架构不符）",
+  failed: "失败", missing_manifest: "缺少清单", missing_key: "缺少密钥",
+};
+const taskRows = new Map();
+function resetTaskRows() {
+  taskRows.clear();
+  $("taskDepots").innerHTML = "<tr><th>depot</th><th>状态</th><th>文件</th><th>大小</th><th>耗时</th></tr>";
+  $("taskSummary").textContent = "";
+  $("fill").style.width = "0%";
+}
+function renderTaskRow(row) {
+  taskRows.set(row.depot_id, row);
+  const body = Array.from(taskRows.values());
+  const ok = body.filter((r) => r.status === "ok").length;
+  const bad = body.filter((r) => r.status === "failed" || r.status === "missing_manifest" || r.status === "missing_key").length;
+  $("taskDepots").innerHTML = "<tr><th>depot</th><th>状态</th><th>文件</th><th>大小</th><th>耗时</th></tr>" + body.map((r) =>
+    "<tr><td>" + r.depot_id + '</td><td>' + STATUS_TEXT[r.status] + "</td><td class='num'>" + r.files_ok + "</td><td class='num'>" + fmtBytes(r.bytes) + "</td><td class='num'>" + (r.seconds ? r.seconds.toFixed(1) + "s" : "-") + "</td></tr>"
+  ).join("");
+  $("taskSummary").textContent = body.length ? ("完成 " + ok + " · 失败 " + bad + " · 共 " + body.length) : "";
+  if (body.length) { $("fill").classList.add("running"); }
+  $("taskHint").style.display = body.length ? "none" : "";
+}
+window.runtime.EventsOn("restore:start", (appid) => { resetTaskRows(); log("[job] appid=" + appid + " 开始"); $("taskHint").style.display = "none"; });
 window.runtime.EventsOn("restore:depot", (row) => {
   log("[depot " + row.depot_id + "] " + row.status + " files=" + row.files_ok + " bytes=" + row.bytes);
-  $("stats").textContent = "depot " + row.depot_id + " " + row.status;
+  renderTaskRow(row);
+  $("stats").textContent = "depot " + row.depot_id + " · " + (STATUS_PLAIN[row.status] || row.status);
 });
 window.runtime.EventsOn("restore:error", (msg) => { log("[error] " + msg); $("start").disabled = false; $("taskBadge").textContent = "失败"; toast("下载失败：" + msg, "bad"); });
 window.runtime.EventsOn("restore:done", async (result) => {
   log("[done] ok=" + result.ok + " depots=" + result.depots.length + " files=" + result.files_ok + " bytes=" + result.bytes);
   $("stats").textContent = "完成 · " + fmtBytes(result.bytes);
-  $("fill").style.width = "100%";
+  $("fill").classList.remove("running"); $("fill").style.width = "100%";
   $("start").disabled = false;
   $("taskBadge").textContent = result.ok ? "完成" : "失败";
   toast(result.ok ? "下载完成 · " + fmtBytes(result.bytes) : "下载结束但有失败项", result.ok ? "ok" : "bad");
@@ -489,6 +536,7 @@ function renderStoreList(games) {
 }
 
 async function loadStore(query) {
+  const setCount = (n, extra) => { const el = $("storeCount"); if (el) el.textContent = extra || (n ? "共 " + n + " 款" : ""); };
   try {
     const result = await app().StoreList(currentSource, query || "");
     renderStoreList(result.games || []);
