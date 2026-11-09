@@ -213,10 +213,14 @@ async function loadGames() {
     const runtime = runtimes[i] || { installed: false };
     const canLaunch = check.verdict === "ready" || check.verdict === "anticheat" || check.verdict === "needs_steam";
     const needsRuntime = check.verdict === "needs_steam";
+    const partial = !!check.partial;
+    const pendingCount = (check.pending || []).length;
     return '<div class="game">' +
       '<div class="cover">' + initial + '</div>' +
       '<div class="meta"><div class="title">' + title +
-      ' <span class="verdict ' + check.verdict + '" title="' + (check.detail || "") + '">' + (VERDICT_TEXT[check.verdict] || check.verdict) + "</span></div>" +
+      ' <span class="verdict ' + check.verdict + '" title="' + (check.detail || "") + '">' + (VERDICT_TEXT[check.verdict] || check.verdict) + "</span>" +
+      (partial ? ' <span class="verdict needs_steam" style="margin-left:6px">下载未完成</span>' : "") +
+      "</div>" +
       '<div class="path" title="' + g.path + '">AppID ' + g.appid + ' · ' + g.path + '</div>' +
       (check.detail ? '<div class="path">' + check.detail + "</div>" : "") +
       (runtime.mode ? '<div class="path"><span class="chip" style="font-size:10.5px">运行时：' + (runtime.mode === "loader" ? "loader" : "shim") + '</span></div>' : "") +
@@ -224,6 +228,7 @@ async function loadGames() {
       "</div>" +
       '<div class="size">' + fmtBytes(g.bytes) + ' · ' + g.files + ' 个文件</div>' +
       (canLaunch ? '<button data-launch="' + g.appid + '">启动</button>' : "") +
+      (partial ? '<button class="ghost" data-resume="' + g.appid + '" title="重新拉起未完成的 depot">继续下载（' + pendingCount + '）</button>' : "") +
       (needsRuntime ? '<button class="ghost" data-runtime="' + g.appid + '" data-on="' + (runtime.installed ? "1" : "0") + '" title="' + (runtime.installed ? "移除运行时层" : "启用运行时层（gse_fork，按需下载）") + '">' + (runtime.installed ? "移除运行时" : "启用运行时") + '</button>' : "") +
       '<button class="ghost" data-exe="' + g.appid + '" title="指定主程序">主程序</button>' +
       '<button class="ghost" data-refresh="' + g.appid + '" title="重新检测">重检</button>' +
@@ -231,6 +236,16 @@ async function loadGames() {
       '</div>';
   }).join("");
   list.querySelectorAll("[data-open]").forEach((btn) => btn.addEventListener("click", () => app().OpenPath(btn.dataset.open)));
+  list.querySelectorAll("[data-resume]").forEach((btn) => btn.addEventListener("click", async () => {
+    const appid = Number(btn.dataset.resume);
+    btn.disabled = true; btn.textContent = "下载中…";
+    try {
+      const game = games.find((g) => g.appid === appid);
+      await app().Restore(appid, (game && game.path) || "", 2);
+      toast("已开始继续下载，完成后会自动刷新", "ok");
+      setTimeout(loadGames, 25000);
+    } catch (err) { toast("继续下载失败：" + err, "bad"); btn.disabled = false; }
+  }));
   list.querySelectorAll("[data-runtime]").forEach((btn) => btn.addEventListener("click", async () => {
     const appid = Number(btn.dataset.runtime);
     const on = btn.dataset.on === "1";

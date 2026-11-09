@@ -348,6 +348,10 @@ func (a *App) Restore(appid int, target string, depotWorkers int) string {
 			target = a.GamePath(appid)
 		}
 		runtime.EventsEmit(a.ctx, "restore:start", appid)
+		preferArch := ""
+		if report := a.InspectGame(appid); report.Exe != "" {
+			preferArch = peArch(report.Exe)
+		}
 		result, err := core.RestoreApp(
 			appid,
 			target,
@@ -357,6 +361,7 @@ func (a *App) Restore(appid int, target string, depotWorkers int) string {
 			a.settings.ChunkWorkers,
 			depotWorkers,
 			filepath.Join(target, ".relaystore-state.json"),
+			preferArch,
 			func(row core.DepotResult) {
 				runtime.EventsEmit(a.ctx, "restore:depot", row)
 			},

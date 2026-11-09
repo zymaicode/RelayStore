@@ -6,9 +6,41 @@ import (
 	"os"
 	"path/filepath"
 	"strconv"
+	"strings"
 	"sync"
 	"time"
 )
+
+// manifestArchHint guesses which architecture a depot targets from its file paths.
+func manifestArchHint(m *Manifest) string {
+	if m == nil || len(m.Files) == 0 {
+		return ""
+	}
+	x64, x32 := 0, 0
+	for _, file := range m.Files {
+		path := ""
+		if len(file.Names) > 0 {
+			path = file.Names[0]
+		}
+		lower := strings.ToLower(path)
+		switch {
+		case strings.Contains(lower, "x86_64") || strings.Contains(lower, "amd64"):
+			x64++
+		case strings.Contains(lower, "x86/") || strings.Contains(lower, "plugins/x86/") || strings.HasSuffix(lower, "/x86"):
+			x32++
+		}
+	}
+	if x64 == 0 && x32 == 0 {
+		return ""
+	}
+	if x64 >= x32*3 {
+		return "x64"
+	}
+	if x32 >= x64*3 {
+		return "x32"
+	}
+	return ""
+}
 
 type DepotResult struct {
 	DepotID   int    `json:"depot_id"`
@@ -66,7 +98,7 @@ func saveState(path string, state map[int]string) {
 }
 
 // RestoreApp restores every depot of an app, in parallel when depotWorkers > 1.
-func RestoreApp(appid int, outDir string, keys map[int]string, idx *Index, cacheDir string, workers, depotWorkers int, statePath string, onProgress func(DepotResult)) (*AppResult, error) {
+func RestoreApp(appid int, outDir string, keys map[int]string, idx *Index, cacheDir string, workers, depotWorkers int, statePath string, preferArch string, onProgress func(DepotResult)) (*AppResult, error) {
 	depots, err := PublicDepots(appid, cacheDir)
 	if err != nil {
 		return nil, err
@@ -105,6 +137,12 @@ func RestoreApp(appid int, outDir string, keys map[int]string, idx *Index, cache
 		if err != nil {
 			row.Status = "missing_manifest"
 			row.Error = err.Error()
+			return row
+		}
+		if hint := manifestArchHint(manifest); hint != "" && preferArch != "" && hint != preferArch && len(depots) > 1 {
+			// platform twins ship the same content for another arch; keep only ours
+			row.Status = "skipped_arch"
+			row.Error = fmt.Sprintf("skipped: %s only (app is %s)", hint, preferArch)
 			return row
 		}
 		row.Source = source

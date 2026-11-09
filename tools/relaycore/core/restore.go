@@ -58,7 +58,7 @@ func (r *Restorer) fetchChunk(client *http.Client, sha string, cacheDir string) 
 	var cipherText []byte
 	var lastErr error
 	for _, host := range hosts {
-		for attempt := 0; attempt < 3; attempt++ {
+		for attempt := 0; attempt < 5; attempt++ {
 			request, err := http.NewRequest(http.MethodGet, fmt.Sprintf("%s/depot/%d/chunk/%s", host, r.Depot, sha), nil)
 			if err != nil {
 				lastErr = err
@@ -68,14 +68,14 @@ func (r *Restorer) fetchChunk(client *http.Client, sha string, cacheDir string) 
 			response, err := client.Do(request)
 			if err != nil {
 				lastErr = err
-				time.Sleep(300 * time.Millisecond)
+				time.Sleep(time.Duration(200<<attempt) * time.Millisecond)
 				continue
 			}
 			body, readErr := io.ReadAll(response.Body)
 			response.Body.Close()
 			if response.StatusCode != 200 || readErr != nil {
 				lastErr = fmt.Errorf("%s: HTTP %d", host, response.StatusCode)
-				time.Sleep(300 * time.Millisecond)
+				time.Sleep(time.Duration(200<<attempt) * time.Millisecond)
 				continue
 			}
 			cipherText = body

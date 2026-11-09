@@ -25,6 +25,8 @@ type GameInspection struct {
 	Detail    string   `json:"detail"`
 	LastExit  int      `json:"lastExit"`
 	LastExitAt int64   `json:"lastExitAt"`
+	Partial   bool     `json:"partial"`
+	Pending   []int    `json:"pending"`
 }
 
 var junkExe = []string{
@@ -86,8 +88,11 @@ func (a *App) InspectGame(appid int) GameInspection {
 	path := a.InstallPathFor(appid)
 	key := strconv.Itoa(appid)
 	useCache := a.settings.DataDir != ""
+	partial, pending := a.downloadProgress(appid)
 	if cached, ok := a.loadCache()[key]; useCache && ok && time.Since(time.Unix(cached.CheckedAt, 0)) < inspectionTTL {
 		return GameInspection{
+			Partial:   partial,
+			Pending:   pending,
 			AppID:     appid,
 			Path:      path,
 			Exe:       cached.Exe,
@@ -200,6 +205,11 @@ func (a *App) InspectGame(appid int) GameInspection {
 	if result, ok := a.lastLaunchResult(appid); ok {
 		report.LastExit = result.ExitCode
 		report.LastExitAt = result.At
+	}
+	report.Partial = partial
+	report.Pending = pending
+	if report.Partial && report.Verdict == "ready" {
+		report.Detail = "下载未完成，可点「继续下载」补齐"
 	}
 	if !useCache {
 		return report
@@ -405,4 +415,42 @@ func (a *App) lastLaunchResult(appid int) (launchResult, bool) {
 	}
 	result, ok := all[strconv.Itoa(appid)]
 	return result, ok
+}
+// downloadProgress reports which depots of an install are still pending.
+func (a *App) downloadProgress(appid int) (bool, []int) {
+	target := a.InstallPathFor(appid)
+	statePath := filepath.Join(target, ".relaystore-state.json")
+	state := coreState(statePath)
+	if len(state) == 0 {
+		return false, nil
+	}
+	var pending []int
+	for depot, status := range state {
+		if status != "ok" {
+			pending = append(pending, depot)
+		}
+	}
+	if len(pending) == 0 {
+		return false, nil
+	}
+	return true, pending
+}
+
+// coreState reads the resume state file that RestoreApp writes.
+func coreState(path string) map[int]string {
+	data, err := os.ReadFile(path)
+	if err != nil {
+		return nil
+	}
+	var raw map[string]string
+	if json.Unmarshal(data, &raw) != nil {
+		return nil
+	}
+	state := make(map[int]string, len(raw))
+	for key, value := range raw {
+		if id, err := strconv.Atoi(key); err == nil {
+			state[id] = value
+		}
+	}
+	return state
 }

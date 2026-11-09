@@ -149,6 +149,7 @@ func cmdRestoreApp(args []string) {
 	workers := fs.Int("workers", 8, "chunk workers per depot")
 	depotWorkers := fs.Int("depot-workers", 1, "depots in parallel")
 	statePath := fs.String("state", "", "resume state file")
+	preferArch := fs.String("arch", "", "keep only depots for this arch (x32/x64)")
 	fs.Parse(args)
 	if *appid == 0 || *outDir == "" {
 		fmt.Println("usage: steamcore restore-app -appid 480 -out DIR [-state s.json] [-depot-workers 2]")
@@ -158,7 +159,7 @@ func cmdRestoreApp(args []string) {
 	check(err)
 	idx, _ := core.LoadIndex(*indexPath)
 	started := time.Now()
-	result, err := core.RestoreApp(*appid, *outDir, keys, idx, *cacheDir, *workers, *depotWorkers, *statePath, func(row core.DepotResult) {
+	result, err := core.RestoreApp(*appid, *outDir, keys, idx, *cacheDir, *workers, *depotWorkers, *statePath, *preferArch, func(row core.DepotResult) {
 		fmt.Printf("[depot %d] %s files=%d bytes=%d %.1fs %s\n", row.DepotID, row.Status, row.FilesOK, row.Bytes, row.Seconds, row.Error)
 	})
 	check(err)
